@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#04050a" />
+  <title>VROS</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="overlay">
+    <h1>VROS</h1>
+    <p class="sub">a spatial shell for Quest 3, shaped by your hands</p>
+    <button id="enter" disabled>Checking WebXR…</button>
+    <p id="status"></p>
+    <div id="dock"></div>
+    <dl class="legend">
+      <dt>Pinch</dt><dd>gravity well: gather and drag particles</dd>
+      <dt>Open palm</dt><dd>wind: push and swirl the field</dd>
+      <dt>Fist</dt><dd>stillness: time slows down</dd>
+      <dt>Pinch with both hands</dt><dd>move, scale and turn the whole formation</dd>
+      <dt>Palm up</dt><dd>app dock appears; poke an orb to open it</dd>
+      <dt>Two fists (hold)</dt><dd>recenter in front of you</dd>
+    </dl>
+    <p class="desk">Desktop preview: drag = pinch · right-drag / shift-drag = palm · wheel = scale · 1–4 = apps</p>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

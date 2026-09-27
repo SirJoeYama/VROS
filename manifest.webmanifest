@@ -1,0 +1,10 @@
+{
+  "name": "VROS",
+  "short_name": "VROS",
+  "description": "A spatial shell for Meta Quest 3, shaped by your hands.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#04050a",
+  "theme_color": "#04050a",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
