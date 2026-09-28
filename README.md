@@ -92,6 +92,19 @@ The skeleton is a hierarchy: hips → spine → chest → neck → head, chest �
 
 Desktop preview: drag handles with the mouse, scale the scene with the wheel, click the timeline; keys ←/→ frames, space play, N new frame, Delete, O onion, H / J hands / feet IK⇄FK, F fps.
 
+## Cinema
+
+A media player on a big floating screen, controlled with your hands.
+
+| Gesture | Effect |
+| --- | --- |
+| **Pinch (a quick tap)** | Play / pause. |
+| **Fist + twist** | A jog dial: clockwise fast-forwards, counter-clockwise rewinds. One full turn is one minute; the screen shows how far you've gone. |
+| **Pinch with both hands** | Move, scale and turn the screen. |
+| **Remote** (a small panel near your hands) | Poke: previous · −10 s · play/pause · +10 s · next, or poke the progress bar to jump there. |
+
+Pick what to play in window mode: **Open files…** (video or audio from the headset's storage) or paste a link. Two free samples are loaded to start with. Audio files show a title card instead of a picture. Links from other sites only show a picture if the site allows it (CORS); local files always work. Desktop preview: click to play/pause, the wheel scrubs, ←/→ jump 10 s.
+
 ## Run it on your Quest 3
 
 WebXR needs a secure origin (HTTPS or `localhost`).
@@ -124,6 +137,8 @@ shared/             used by the home screen and every app
   handsView.js      glowing joint visualization
   pointsMaterial.js glowing point shader
   closeGesture.js   palms together → close the app (home: leave XR)
+  fistTwist.js      fist + twist as a knob (Scribe scrolling, Cinema scrubbing)
+  sceneGrab.js      two-hand pinch → move / scale / turn (Marionette, Cinema)
   helpGesture.js    palm toward your eyes → help card
 apps/galaxies/
   index.html        overlay + import map (three.js from jsDelivr, no build step)
@@ -152,4 +167,8 @@ apps/marionette/
   src/rig.js        the puppet's bone hierarchy, FK and two-bone IK, poses
   src/timeline.js   frames, playback, the film-strip panel
   src/main.js       stage, handles, pinch-dragging, onion skins, XR
+apps/cinema/
+  src/player.js     playlist and playback on one <video> element
+  src/remote.js     the pokeable remote: title, time, progress bar, buttons
+  src/main.js       screen, on-screen feedback, pinch / twist / two-hand gestures, XR
 ```

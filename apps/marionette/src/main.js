@@ -6,7 +6,7 @@ import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { Rig, HANDLES } from './rig.js';
 import { Timeline, TimelinePanel, PANEL_H } from './timeline.js';
-import { SceneGrab } from './sceneGrab.js';
+import { SceneGrab } from '../../../shared/sceneGrab.js';
 
 const BG = new THREE.Color(0x04050a);
 const GRAB_RADIUS = 0.035; // how close a pinch must be to a handle

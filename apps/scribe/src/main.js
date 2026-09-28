@@ -4,6 +4,7 @@ import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
+import { FistTwist } from '../../../shared/fistTwist.js';
 import { Doc } from './doc.js';
 import { Page, PAGE_H } from './page.js';
 import { Speech, micPermission } from './speech.js';
@@ -172,21 +173,7 @@ addEventListener('resize', onResize);
 onResize();
 
 // ---------- gestures ----------
-// How far a fist has rolled around the forearm since last frame. Seen from
-// behind the hand (the wearer's view), a positive angle is clockwise.
-const _axis = new THREE.Vector3(), _across = new THREE.Vector3(), _v = new THREE.Vector3();
-function fistRoll(h) {
-  const j = h.joints;
-  _axis.set(j[33] - j[0], j[34] - j[1], j[35] - j[2]).normalize(); // wrist → middle knuckle
-  _across.set(j[18] - j[63], j[19] - j[64], j[20] - j[65]); // pinky knuckle → index knuckle
-  _across.addScaledVector(_axis, -_across.dot(_axis)).normalize();
-  const prev = rolls.get(h.id);
-  rolls.set(h.id, _across.clone());
-  if (!prev) return 0;
-  return Math.atan2(_v.crossVectors(prev, _across).dot(_axis), prev.dot(_across));
-}
-
-const rolls = new Map(); // hand id → last "across" vector while a fist is held
+const twist = new FistTwist();
 const drags = new Map(); // hand id → character range of the word a pinch-selection started on
 const wasPinching = new Map();
 const local = new THREE.Vector3();
@@ -228,12 +215,12 @@ function updateGestures(hands, dt) {
 
     // Fist + twist scrolls: clockwise moves down the page.
     if (h.kind === 'hand' && h.fist) {
-      const d = fistRoll(h);
+      const d = twist.roll(h);
       if (Math.abs(d) > 0.004) page.scrollBy(d * SCROLL_PER_RADIAN);
-    } else rolls.delete(h.id);
+    } else twist.release(h);
   }
 
-  for (const id of [...rolls.keys()]) if (!hands.some((h) => h.id === id)) rolls.delete(id);
+  twist.prune(hands);
   page.hover = hover;
   buttons.update(dt, pokes, clicks);
 }
