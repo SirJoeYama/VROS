@@ -6,6 +6,7 @@ const APPS = [
   { id: 'galaxies', name: 'Galaxies', blurb: 'particle formations you shape with your hands' },
   { id: 'scribe', name: 'Scribe', blurb: 'dictate onto a floating A4 page' },
   { id: 'holodex', name: 'Holodex', blurb: 'browse the web; tabs on a Rolodex' },
+  { id: 'marionette', name: 'Marionette', blurb: 'a puppet on strings from your fingertips' },
 ];
 
 const grid = document.getElementById('grid');
