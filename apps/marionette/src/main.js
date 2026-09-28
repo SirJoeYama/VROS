@@ -4,10 +4,12 @@ import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
-import { Marionette } from './puppet.js';
+import { Rig, HANDLES } from './rig.js';
+import { Timeline, TimelinePanel, PANEL_H } from './timeline.js';
 
 const BG = new THREE.Color(0x04050a);
-const INDEX_TIP = 9, MIDDLE_TIP = 14, RING_TIP = 19;
+const GRAB_RADIUS = 0.035; // how close a pinch must be to a handle
+const PRESS_DEPTH = 0.012, HOVER_DEPTH = 0.05; // poking the timeline panel
 
 // ---------- renderer / scene ----------
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -23,10 +25,55 @@ scene.add(new THREE.HemisphereLight(0xfff3e0, 0x202040, 1.6));
 const sun = new THREE.DirectionalLight(0xffffff, 1.4);
 sun.position.set(0.5, 2, 1);
 scene.add(sun);
-const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.01, 50);
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.01, 50);
 
-const puppet = new Marionette();
-scene.add(puppet.stage, puppet.group);
+// ---------- stage, puppet, onion skins, timeline ----------
+const stage = new THREE.Group();
+scene.add(stage);
+const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.21, 0.025, 48), new THREE.MeshStandardMaterial({ color: 0x5a3a24, roughness: 0.8 }));
+disc.position.y = -0.0125;
+stage.add(disc);
+
+const rig = new Rig();
+const prevGhost = new Rig({ ghost: true, color: 0xff5050 });
+const nextGhost = new Rig({ ghost: true, color: 0x50b4ff });
+const measure = new Rig({ ghost: true }); // never shown; poses thumbnails
+stage.add(rig.root, prevGhost.root, nextGhost.root);
+
+const timeline = new Timeline(new Rig().restPose());
+const panel = new TimelinePanel(timeline, (pose) => {
+  measure.setPose(pose);
+  return measure.joints();
+});
+panel.mesh.position.set(0, -0.07, 0.27);
+panel.mesh.rotation.x = -0.75; // tilted up toward your eyes
+stage.add(panel.mesh);
+
+// Handles: amber spheres bend (FK), cyan diamonds place hands/feet (IK), the
+// white ring moves the whole puppet.
+const handleMeshes = HANDLES.map((h) => {
+  const geo = h.type === 'ik' ? new THREE.OctahedronGeometry(0.013) : h.type === 'move' ? new THREE.TorusGeometry(0.03, 0.005, 8, 32) : new THREE.SphereGeometry(0.01, 16, 12);
+  const mat = new THREE.MeshBasicMaterial({ color: h.type === 'ik' ? 0x7fe7ff : h.type === 'move' ? 0xffffff : 0xffc36a, transparent: true, opacity: 0.85, depthTest: false });
+  const m = new THREE.Mesh(geo, mat);
+  m.renderOrder = 10;
+  if (h.type === 'move') m.rotation.x = Math.PI / 2;
+  scene.add(m);
+  return { h, m, hover: 0 };
+});
+
+function showFrame() {
+  rig.setPose(timeline.pose);
+  const n = timeline.frames.length, show = timeline.onion && !timeline.playing && n > 1;
+  prevGhost.root.visible = show && timeline.current > 0;
+  nextGhost.root.visible = show && timeline.current < n - 1;
+  if (prevGhost.root.visible) prevGhost.setPose(timeline.frames[timeline.current - 1]);
+  if (nextGhost.root.visible) nextGhost.setPose(timeline.frames[timeline.current + 1]);
+}
+timeline.addEventListener('change', (e) => {
+  if (e.detail.frameChanged || !timeline.playing) showFrame();
+});
+showFrame();
+
 const handsView = new HandsView();
 scene.add(handsView.points);
 const input = new Input(renderer, camera);
@@ -37,14 +84,17 @@ scene.add(help.group);
 
 // ---------- placement ----------
 function placeDesktop() {
-  puppet.place(new THREE.Vector3(0, 0.9, -0.6), new THREE.Vector3(0, 0.9, 0));
-  camera.position.set(0, 1.2, 0);
-  camera.lookAt(0, 1.05, -0.6);
+  stage.position.set(0, 0.9, -0.62);
+  stage.rotation.set(0, 0, 0);
+  stage.updateMatrixWorld(true);
+  // aimed a little left so the page overlay doesn't cover the stage
+  camera.position.set(-0.12, 1.36, 0.3);
+  camera.lookAt(-0.12, 1.04, -0.5);
 }
 placeDesktop();
 
-// The stage sits half a meter ahead, about 80 cm below your eyes, so your
-// hands hang naturally above the puppet.
+// Stage half a meter ahead, its floor ~55 cm below your eyes; the timeline
+// sits in front of it like a desk.
 function placeXR(frame) {
   const pose = frame.getViewerPose(renderer.xr.getReferenceSpace());
   if (!pose) return false;
@@ -53,70 +103,166 @@ function placeXR(frame) {
   fwd.y = 0;
   if (fwd.lengthSq() < 1e-4) fwd.set(0, 0, -1);
   fwd.normalize();
-  puppet.place(new THREE.Vector3(p.x + fwd.x * 0.5, p.y - 0.8, p.z + fwd.z * 0.5), new THREE.Vector3(p.x, p.y, p.z));
+  stage.position.set(p.x + fwd.x * 0.5, p.y - 0.55, p.z + fwd.z * 0.5);
+  stage.lookAt(p.x, stage.position.y, p.z);
+  stage.updateMatrixWorld(true);
   return true;
 }
 
-// ---------- hands → strings ----------
-const joint = (h, k, out) => out.set(h.joints[k * 3], h.joints[k * 3 + 1], h.joints[k * 3 + 2]);
-const tips = { L: {}, R: {} };
-for (const s of ['L', 'R']) for (const k of ['index', 'middle', 'ring', 'palm']) tips[s][k] = new THREE.Vector3();
-const bar = {};
-for (const c of ['head', 'sL', 'sR', 'hL', 'hR', 'kL', 'kR']) bar[c] = new THREE.Vector3();
-const headMid = new THREE.Vector3();
-const right = new THREE.Vector3();
-
-// Which side of the stage a hand is on, as you look at it.
-function sideOf(h) {
-  if (h.handedness === 'left') return 'L';
-  if (h.handedness === 'right') return 'R';
-  return null;
+// ---------- actions ----------
+function press(region) {
+  panel.flash(region);
+  const id = region.id;
+  if (id.startsWith('frame:')) {
+    timeline.pause();
+    timeline.go(+id.slice(6));
+  } else if (id === 'prev') { timeline.pause(); timeline.go(timeline.current - 1); }
+  else if (id === 'next') { timeline.pause(); timeline.go(timeline.current + 1); }
+  else if (id === 'play') timeline.togglePlay();
+  else if (id === 'add') { timeline.pause(); timeline.addFrame(); }
+  else if (id === 'delete') { timeline.pause(); timeline.deleteFrame(); }
+  else if (id === 'onion') timeline.toggleOnion();
+  else if (id === 'limb') timeline.toggleLimbMode();
+  else if (id === 'fps') timeline.cycleFps();
 }
 
-function anchorsFrom(hands) {
-  const anchors = {};
-  const heads = [];
+addEventListener('keydown', (e) => {
+  if (e.target.closest('input, textarea')) return;
+  const k = e.key.toLowerCase();
+  const map = { arrowleft: 'prev', arrowright: 'next', ' ': 'play', n: 'add', delete: 'delete', backspace: 'delete', o: 'onion', k: 'limb', f: 'fps' };
+  if (map[k]) {
+    e.preventDefault();
+    press({ id: map[k] });
+  }
+});
+document.getElementById('reset').addEventListener('click', () => {
+  timeline.pause();
+  timeline.setPose(new Rig().restPose());
+  showFrame();
+});
+document.getElementById('clear').addEventListener('click', () => {
+  if (confirm('Delete all frames and start a new animation?')) timeline.clear(new Rig().restPose());
+});
+
+// ---------- grabbing ----------
+const drags = new Map(); // pointer id → { drag, plane? }
+const wasPinching = new Map();
+const pressedPanel = new Map(); // hand id → armed in front of the panel
+const tmp = new THREE.Vector3(), local = new THREE.Vector3();
+const raycaster = new THREE.Raycaster();
+const plane = new THREE.Plane();
+
+function nearestHandle(point, max) {
+  let best = null, bestD = max;
+  for (const hm of handleMeshes) {
+    const d = rig.handlePosition(hm.h, tmp).distanceTo(point);
+    if (d < bestD) { bestD = d; best = hm; }
+  }
+  return best;
+}
+
+// Mouse clicks on the timeline are handled straight from the event: a quick
+// click can press and release between two frames and never be seen by the
+// per-frame pinch check.
+let panelClickAt = -1e9;
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  if (renderer.xr.isPresenting || e.button !== 0) return;
+  raycaster.setFromCamera(new THREE.Vector2((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1), camera);
+  panel.mesh.updateMatrixWorld();
+  plane.setFromNormalAndCoplanarPoint(panel.mesh.getWorldDirection(new THREE.Vector3()), panel.mesh.getWorldPosition(new THREE.Vector3()));
+  const hit = raycaster.ray.intersectPlane(plane, new THREE.Vector3());
+  const region = hit && panel.hit(panel.mesh.worldToLocal(hit));
+  if (region) {
+    panelClickAt = performance.now();
+    press(region);
+  }
+});
+
+// The mouse picks what's under the pointer and drags on a plane facing the camera.
+function mouseRay() {
+  raycaster.setFromCamera(input.mouse.ndc, camera);
+  return raycaster.ray;
+}
+function nearestHandleToRay(ray, max) {
+  let best = null, bestD = max;
+  for (const hm of handleMeshes) {
+    const d = ray.distanceToPoint(rig.handlePosition(hm.h, tmp));
+    if (d < bestD) { bestD = d; best = hm; }
+  }
+  return best;
+}
+
+function updatePointers(hands, dt) {
+  const hover = new Set();
   for (const h of hands) {
-    const side = sideOf(h);
-    if (h.kind === 'hand' && side) {
-      // Fingers: index → hand, middle → head, ring → knee, palm → shoulder.
-      const t = tips[side];
-      anchors['h' + side] = joint(h, INDEX_TIP, t.index);
-      anchors['k' + side] = joint(h, RING_TIP, t.ring);
-      anchors['s' + side] = t.palm.copy(h.palmCenter);
-      heads.push(joint(h, MIDDLE_TIP, t.middle));
-    } else if (h.kind === 'controller' && side) {
-      // A controller is half a control bar: trigger lifts the hand string,
-      // grip lifts the knee string.
-      const sign = side === 'L' ? -1 : 1;
-      const p = h.pinchPoint;
-      anchors['s' + side] = bar['s' + side].copy(p);
-      anchors['h' + side] = bar['h' + side].copy(p).addScaledVector(right, sign * 0.05);
-      anchors['k' + side] = bar['k' + side].copy(p).addScaledVector(right, sign * 0.02);
-      if (h.pinch) anchors['h' + side].y += 0.1;
-      if (h.open) anchors['k' + side].y += 0.08;
-      heads.push(bar['head'].copy(p).addScaledVector(right, -sign * 0.03));
-    } else if (h.kind === 'mouse') {
-      // Desktop: one control bar at the pointer. Left button waves the arms;
-      // right button (or shift) lifts the knees in turn.
-      const p = h.pinchPoint;
-      const wave = h.pinch ? Math.sin(performance.now() / 180) * 0.06 : 0;
-      const step = h.open ? Math.sin(performance.now() / 250) * 0.05 : 0;
-      anchors.head = bar.head.copy(p);
-      anchors.sL = bar.sL.copy(p).addScaledVector(right, -0.06);
-      anchors.sR = bar.sR.copy(p).addScaledVector(right, 0.06);
-      anchors.hL = bar.hL.copy(p).addScaledVector(right, -0.1);
-      anchors.hR = bar.hR.copy(p).addScaledVector(right, 0.1);
-      anchors.kL = bar.kL.copy(p).addScaledVector(right, -0.04);
-      anchors.kR = bar.kR.copy(p).addScaledVector(right, 0.04);
-      anchors.hL.y += Math.max(0, wave);
-      anchors.hR.y += Math.max(0, -wave);
-      anchors.kL.y += Math.max(0, step);
-      anchors.kR.y += Math.max(0, -step);
+    const start = h.pinch && !wasPinching.get(h.id);
+    const end = !h.pinch && wasPinching.get(h.id);
+    wasPinching.set(h.id, h.pinch);
+
+    if (h.kind === 'mouse') {
+      const ray = mouseRay();
+      const hm = drags.get(h.id)?.hm || nearestHandleToRay(ray, 0.02);
+      if (hm) hover.add(hm);
+      // (Clicks on the timeline are handled by the pointerdown listener below.)
+      if (start && performance.now() - panelClickAt > 400) {
+        if (hm) {
+          timeline.pause();
+          const at = rig.handlePosition(hm.h, new THREE.Vector3());
+          drags.set(h.id, { hm, drag: rig.beginDrag(hm.h, at, timeline.limbMode), plane: new THREE.Plane().setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()), at) });
+        }
+      }
+      const d = drags.get(h.id);
+      if (d && h.pinch) {
+        const p = ray.intersectPlane(d.plane, new THREE.Vector3());
+        if (p) rig.drag(d.drag, p);
+      }
+    } else {
+      // Hands and controllers pinch (trigger) near a handle to grab it.
+      if (start) {
+        const hm = nearestHandle(h.pinchPoint, GRAB_RADIUS);
+        if (hm) {
+          timeline.pause();
+          drags.set(h.id, { hm, drag: rig.beginDrag(hm.h, h.pinchPoint, timeline.limbMode) });
+        }
+      }
+      const d = drags.get(h.id);
+      if (d && h.pinch) rig.drag(d.drag, h.pinchPoint);
+      const near = d?.hm || nearestHandle(h.pinchPoint, GRAB_RADIUS * 1.4);
+      if (near) hover.add(near);
+
+      // Poke the timeline with an index finger (not while holding a handle).
+      if (h.kind === 'hand' && !d) {
+        panel.mesh.worldToLocal(local.copy(h.indexTip));
+        const inside = Math.abs(local.x) < 0.25 && Math.abs(local.y) < PANEL_H / 2;
+        const deep = inside && local.z < PRESS_DEPTH && local.z > -0.04;
+        if (deep && pressedPanel.get(h.id) === false) {
+          const region = panel.hit(local);
+          if (region) press(region);
+        }
+        pressedPanel.set(h.id, deep ? true : inside && local.z < HOVER_DEPTH ? false : undefined);
+      }
+    }
+    if (end && drags.has(h.id)) {
+      drags.delete(h.id);
+      timeline.setPose(rig.getPose());
     }
   }
-  if (heads.length) anchors.head = headMid.copy(heads[0]).add(heads[1] || heads[0]).multiplyScalar(0.5);
-  return anchors;
+  for (const id of [...drags.keys()]) {
+    if (!hands.some((h) => h.id === id)) {
+      drags.delete(id);
+      timeline.setPose(rig.getPose());
+    }
+  }
+
+  const grabbing = new Set([...drags.values()].map((d) => d.hm));
+  for (const hm of handleMeshes) {
+    rig.handlePosition(hm.h, hm.m.position);
+    const target = grabbing.has(hm) ? 1 : hover.has(hm) ? 0.6 : 0;
+    hm.hover += (target - hm.hover) * Math.min(1, dt * 14);
+    hm.m.scale.setScalar(1 + hm.hover * 0.6);
+    hm.m.material.opacity = 0.55 + hm.hover * 0.45;
+    hm.m.visible = !timeline.playing;
+  }
 }
 
 // ---------- XR session ----------
@@ -135,7 +281,6 @@ renderer.xr.addEventListener('sessionend', () => {
   placeDesktop();
   onResize();
 });
-document.getElementById('reset').addEventListener('click', () => puppet.reset());
 
 function onResize() {
   if (renderer.xr.isPresenting) return;
@@ -150,7 +295,7 @@ onResize();
 
 // ---------- main loop ----------
 const center = new THREE.Vector3();
-let fistTime = 0, last = 0;
+let last = 0;
 renderer.setAnimationLoop((time, frame) => {
   const dt = Math.min(Math.max(time / 1000 - last, 0), 1 / 30);
   last = time / 1000;
@@ -158,27 +303,16 @@ renderer.setAnimationLoop((time, frame) => {
     needPlace = false;
     help.hint(renderer.xr.getCamera());
   }
-
-  // Desktop pointer moves on a plane 30 cm above the stage.
-  center.copy(puppet.stage.position).y += 0.32;
+  rig.bones.hips.getWorldPosition(center);
   input.update(frame, dt, center);
   for (const ev of input.events) if (ev === 'recenter') needPlace = true;
 
   const viewer = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
-  right.setFromMatrixColumn(viewer.matrixWorld, 0).setY(0).normalize();
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
-
-  // Two fists held for a moment: stand the puppet back up (and re-place the stage in XR).
-  fistTime = input.hands.filter((h) => h.fist).length >= 2 ? fistTime + dt : 0;
-  if (fistTime > 1) {
-    fistTime = -10;
-    if (frame) needPlace = true;
-    else puppet.reset();
-  }
-
-  puppet.setAnchors(anchorsFrom(input.hands.filter((h) => h !== helpHand && !h.fist)));
-  puppet.update(dt);
+  updatePointers(input.hands.filter((h) => h !== helpHand), dt);
+  timeline.tick(dt);
+  panel.draw();
   handsView.update(input.hands);
   renderer.render(scene, camera);
 });
