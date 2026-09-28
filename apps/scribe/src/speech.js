@@ -6,6 +6,16 @@
 // Callbacks: onInterim(text), onFinal(text), onStatus(text).
 
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+// 'granted' | 'prompt' | 'denied'. The permission prompt can't show inside an
+// immersive session, so the page asks for the mic before entering XR.
+export async function micPermission() {
+  try {
+    return (await navigator.permissions.query({ name: 'microphone' })).state;
+  } catch {
+    return 'granted'; // can't tell; behave as before
+  }
+}
 const FALLBACK_ERRORS = ['network', 'service-not-allowed', 'language-not-supported'];
 
 export class Speech {
@@ -38,6 +48,13 @@ export class Speech {
     return this.active ? this.stop() : this.start();
   }
 
+  // Call from a real user action (a click, or an XR "select" such as a
+  // pinch). Browsers only let audio start from one, and poking a 3D button
+  // doesn't count, so in XR the first pinch is what gets the mic going.
+  unlock() {
+    this.engine.unlock?.();
+  }
+
   fallBackToWhisper(reason) {
     this.engine.stop();
     this.onStatus(`built-in speech failed (${reason}), switching to on-device Whisper`);
@@ -54,7 +71,11 @@ class WebEngine {
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = navigator.language || 'en-US';
-    rec.onstart = () => owner.onStatus('listening');
+    this.running = false;
+    rec.onstart = () => {
+      this.running = true;
+      owner.onStatus('listening');
+    };
     rec.onresult = (e) => {
       let interim = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -70,6 +91,7 @@ class WebEngine {
     };
     // The engine stops on its own after silence; keep it going while active.
     rec.onend = () => {
+      this.running = false;
       if (owner.active && owner.engine === this) setTimeout(() => this.start(), 250);
     };
   }
@@ -80,6 +102,10 @@ class WebEngine {
 
   stop() {
     try { this.rec.stop(); } catch {}
+  }
+
+  unlock() {
+    if (this.owner.active && !this.running) this.start();
   }
 }
 
@@ -119,7 +145,8 @@ class WhisperEngine {
       owner.onStatus(`loading speech model ${Math.round(msg.progress)}%`);
     } else if (msg.type === 'ready') {
       this.ready = true;
-      owner.onStatus(owner.active ? 'listening' : `speech model ready (${msg.device}) · mic off`);
+      if (owner.active) this._status();
+      else owner.onStatus(`speech model ready (${msg.device}) · mic off`);
       this._pump();
     } else if (msg.type === 'result') {
       this.busy = false;
@@ -138,15 +165,20 @@ class WhisperEngine {
     const owner = this.owner;
     if (!this.ctx) {
       try {
-        this.stream = await navigator.mediaDevices.getUserMedia({
-          audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-        });
+        // A prompt that can't be shown (e.g. inside XR) never answers; give up.
+        this.stream = await Promise.race([
+          navigator.mediaDevices.getUserMedia({
+            audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          }),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000)),
+        ]);
       } catch {
         owner.active = false;
-        owner.onStatus('microphone blocked');
+        owner.onStatus('microphone not allowed: leave XR and tap Start dictation');
         return;
       }
       this.ctx = new AudioContext({ sampleRate: 16000 });
+      this.ctx.onstatechange = () => this._status();
       const url = URL.createObjectURL(new Blob([TAP], { type: 'application/javascript' }));
       await this.ctx.audioWorklet.addModule(url);
       const tap = new AudioWorkletNode(this.ctx, 'tap');
@@ -154,15 +186,31 @@ class WhisperEngine {
       this.ctx.createMediaStreamSource(this.stream).connect(tap);
       this._resetGate();
     }
-    await this.ctx.resume();
     this.stream.getTracks().forEach((t) => (t.enabled = true));
-    owner.onStatus(this.ready ? 'listening' : 'loading speech model…');
+    // Without a user action resume() never settles, so don't wait on it; the
+    // statechange handler updates the status once audio actually runs.
+    if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
+    this._status();
   }
 
+  // Turning the mic off only mutes it. Suspending the audio context would
+  // need another user action to resume, which a poke in XR isn't.
   stop() {
-    if (this.ctx) this.ctx.suspend();
     if (this.stream) this.stream.getTracks().forEach((t) => (t.enabled = false));
     this._resetGate();
+  }
+
+  unlock() {
+    if (!this.owner.active) return;
+    if (!this.ctx) this.start();
+    else if (this.ctx.state !== 'running') this.ctx.resume().catch(() => {});
+  }
+
+  _status() {
+    const owner = this.owner;
+    if (!owner.active) return;
+    if (this.ctx?.state !== 'running') owner.onStatus('pinch once to start the microphone');
+    else owner.onStatus(this.ready ? 'listening' : 'loading speech model…');
   }
 
   _resetGate() {

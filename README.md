@@ -56,6 +56,8 @@ Speech to text on a floating A4 page (portrait). Talk and your words appear on t
 | **Fist + twist** | Scrolls like a knob: clockwise scrolls down, counter-clockwise scrolls up. |
 | **Buttons under the page** | Poke with your index finger: mic on/off, undo, recenter the page in front of you. |
 
+**Microphone permission:** the browser can't show its "allow microphone?" prompt inside XR, so the first time, tapping **Enter** only asks for the microphone; tap **Enter** again to go into XR with the mic on. After that one tap does both. If you arrive in XR without having allowed it (e.g. from the XR home screen), the page tells you to leave XR and tap **Start dictation**. If the mic ever shows "pinch once to start the microphone", pinch anywhere: the browser only lets audio start from a real gesture, and a pinch counts where poking the 3D button doesn't.
+
 Voice commands: "new line", "delete that" (removes the selection), "undo" / "scratch that". The text is saved in the browser, so it's still there next time.
 
 Speech recognition: on Quest, Scribe runs [Whisper](https://huggingface.co/Xenova/whisper-tiny.en) on the headset (English, about 40 MB downloaded once on first use). Elsewhere it uses the browser's built-in recognition when available and falls back to Whisper if that fails. `?engine=whisper` or `?engine=web` forces one; `?model=base` uses the larger, more accurate Whisper model.

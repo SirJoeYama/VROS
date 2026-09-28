@@ -29,9 +29,11 @@ export function setupEnterXR({ renderer, button, status, optionalFeatures = ['ha
     return mode;
   })();
 
-  async function enter() {
+  // `handedOver`: entering because the previous page passed its session on,
+  // not because of a tap. beforeEnter may return false to cancel a tap.
+  async function enter(handedOver = false) {
     if (!mode || renderer.xr.isPresenting) return;
-    beforeEnter?.();
+    if (beforeEnter?.(handedOver) === false && !handedOver) return;
     try {
       const session = await navigator.xr.requestSession(mode, { requiredFeatures: ['local-floor'], optionalFeatures });
       await renderer.xr.setSession(session);
@@ -40,10 +42,10 @@ export function setupEnterXR({ renderer, button, status, optionalFeatures = ['ha
     }
   }
 
-  button.addEventListener('click', enter);
+  button.addEventListener('click', () => enter(false));
   navigator.xr?.addEventListener('sessiongranted', async () => {
     await ready;
-    enter();
+    enter(true);
   });
 
   return {

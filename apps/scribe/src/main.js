@@ -6,7 +6,7 @@ import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { Doc } from './doc.js';
 import { Page, PAGE_H } from './page.js';
-import { Speech } from './speech.js';
+import { Speech, micPermission } from './speech.js';
 import { Buttons } from './buttons.js';
 
 const params = new URLSearchParams(location.search);
@@ -56,8 +56,18 @@ const speech = new Speech({
 });
 
 const micBtn = document.getElementById('mic');
+let mic = 'prompt'; // microphone permission: 'granted' | 'prompt' | 'denied'
+micPermission().then((state) => (mic = state));
+const NEEDS_MIC = 'allow the microphone first: leave XR and tap Start dictation';
+
 async function toggleMic() {
+  // Inside XR the permission prompt can't appear, so don't ask there.
+  if (!speech.active && renderer.xr.isPresenting && mic !== 'granted') {
+    speechStatus = status.textContent = NEEDS_MIC;
+    return;
+  }
   await speech.toggle();
+  if (speech.active) mic = 'granted';
   micBtn.textContent = speech.active ? 'Stop dictation' : 'Start dictation';
 }
 micBtn.addEventListener('click', toggleMic);
@@ -111,10 +121,31 @@ const xr = setupEnterXR({
   status,
   // Ask for the mic in the same tap, but don't wait on it: the XR request
   // needs this click's user activation, which a permission prompt can outlast.
-  beforeEnter: () => { if (!speech.active) toggleMic(); },
+  // The mic permission prompt can't show inside XR. If it hasn't been
+  // granted yet, this tap only asks for the mic; the next tap enters XR.
+  beforeEnter: (handedOver) => {
+    if (speech.active) return true;
+    if (mic === 'granted') {
+      toggleMic();
+      return true;
+    }
+    if (handedOver) {
+      speechStatus = status.textContent = NEEDS_MIC;
+      return true;
+    }
+    toggleMic().then(() => {
+      if (speech.active) status.textContent = 'microphone ready: tap Enter again';
+    });
+    return false;
+  },
 });
 
 renderer.xr.addEventListener('sessionstart', () => {
+  // A pinch (XR "select") counts as a user action, so it can start the mic
+  // when a poke on the 3D mic button can't.
+  const session = renderer.xr.getSession();
+  session.addEventListener('select', () => speech.unlock());
+  session.addEventListener('squeeze', () => speech.unlock());
   document.body.classList.add('in-xr');
   scene.background = xr.mode === 'immersive-ar' ? null : BG;
   handsView.points.material.uniforms.uScale.value = 1000;
