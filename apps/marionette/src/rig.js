@@ -27,22 +27,31 @@ const BONES = [
 // Rest pose: arms a little away from the body.
 const REST_ROT = { shoulderL: [0, 0, -0.18], shoulderR: [0, 0, 0.18], elbowL: [0.12, 0, 0], elbowR: [0.12, 0, 0] };
 
-// Grab handles. "fk" handles bend the bone that ends at them; "ik" handles
-// place a hand or foot and let the elbow or knee follow; "move" moves the
-// whole puppet.
+// Grab handles:
+// - "fk" handles bend the bone that ends at them (the chest bends the spine,
+//   the elbow the upper arm, the wrist the forearm, ...); children follow.
+// - "end" handles sit at the fingertips and toe tips. In IK mode they place
+//   the tip and the elbow/knee bends to follow; in FK mode they rotate the
+//   hand or foot itself at the wrist/ankle. The mode is chosen per limb type.
+// - "hip" moves the pelvis while the feet stay planted (legs re-solve by IK).
+// - "move" (a ring on the floor) moves the whole puppet.
 export const HANDLES = [
-  { name: 'hips', type: 'move', bone: 'hips', at: [0, 0, 0] },
+  { name: 'puppet', type: 'move', bone: 'hips', at: [0, 0, 0] },
+  { name: 'hips', type: 'hip', bone: 'hips', at: [0, -0.005, 0.034] },
   { name: 'chest', type: 'fk', bone: 'chest', at: [0, 0, 0], rotates: 'spine' },
   { name: 'head', type: 'fk', bone: 'head', at: [0, 0.035, 0], rotates: 'neck' },
-  { name: 'elbowL', type: 'fk', bone: 'elbowL', at: [0, 0, 0], rotates: 'shoulderL' },
-  { name: 'elbowR', type: 'fk', bone: 'elbowR', at: [0, 0, 0], rotates: 'shoulderR' },
-  { name: 'kneeL', type: 'fk', bone: 'kneeL', at: [0, 0, 0], rotates: 'hipL' },
-  { name: 'kneeR', type: 'fk', bone: 'kneeR', at: [0, 0, 0], rotates: 'hipR' },
-  { name: 'handL', type: 'ik', bone: 'handL', at: [0, 0, 0], chain: ['shoulderL', 'elbowL'], fkRotates: 'elbowL', pole: [0, 0, -1] },
-  { name: 'handR', type: 'ik', bone: 'handR', at: [0, 0, 0], chain: ['shoulderR', 'elbowR'], fkRotates: 'elbowR', pole: [0, 0, -1] },
-  { name: 'footL', type: 'ik', bone: 'footL', at: [0, 0, 0], chain: ['hipL', 'kneeL'], fkRotates: 'kneeL', pole: [0, 0, 1] },
-  { name: 'footR', type: 'ik', bone: 'footR', at: [0, 0, 0], chain: ['hipR', 'kneeR'], fkRotates: 'kneeR', pole: [0, 0, 1] },
 ];
+for (const s of ['L', 'R']) {
+  HANDLES.push(
+    { name: 'elbow' + s, type: 'fk', bone: 'elbow' + s, at: [0, 0, 0], rotates: 'shoulder' + s },
+    { name: 'wrist' + s, type: 'fk', bone: 'hand' + s, at: [0, 0, 0], rotates: 'elbow' + s },
+    { name: 'fingers' + s, type: 'end', limb: 'hand', bone: 'hand' + s, at: [0, -0.034, 0], chain: ['shoulder' + s, 'elbow' + s], rotates: 'hand' + s, pole: [0, 0, -1] },
+    { name: 'knee' + s, type: 'fk', bone: 'knee' + s, at: [0, 0, 0], rotates: 'hip' + s },
+    { name: 'ankle' + s, type: 'fk', bone: 'foot' + s, at: [0, 0, 0], rotates: 'knee' + s },
+    { name: 'toes' + s, type: 'end', limb: 'foot', bone: 'foot' + s, at: [0, -0.014, 0.042], chain: ['hip' + s, 'knee' + s], rotates: 'foot' + s, pole: [0, 0, 1] },
+  );
+}
+const FEET = HANDLES.filter((h) => h.limb === 'foot');
 
 const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _d = new THREE.Vector3();
@@ -148,36 +157,54 @@ export class Rig {
   }
 
   handlePosition(h, out = new THREE.Vector3()) {
+    if (h.type === 'move') {
+      const p = this.bones.hips.position;
+      return this.root.localToWorld(out.set(p.x, 0.004, p.z)); // on the floor under the hips
+    }
     return this.bones[h.bone].localToWorld(out.set(...h.at));
   }
 
   // ---------- dragging ----------
-  // Start dragging handle `h`, grabbed at world `point`. `limbMode` 'fk'
-  // turns hands and feet into FK handles too.
-  beginDrag(h, point, limbMode = 'ik') {
-    const d = { h, start: point.clone(), offset: this.handlePosition(h).sub(point) };
-    if (h.type === 'move') {
-      d.mode = 'move';
+  // Start dragging handle `h`, grabbed at world `point`. `modes` says
+  // whether hand and foot tips are IK or FK: { hand: 'ik'|'fk', foot: ... }.
+  beginDrag(h, point, modes = { hand: 'ik', foot: 'ik' }) {
+    const d = { h, offset: this.handlePosition(h).sub(point) };
+    if (h.type === 'move' || h.type === 'hip') {
+      d.mode = h.type;
       d.rootStart = this.bones.hips.position.clone();
       d.parentStart = this.root.worldToLocal(point.clone());
-    } else if (h.type === 'fk' || limbMode === 'fk') {
+      if (h.type === 'hip') {
+        // remember where the feet are, to keep them there
+        d.feet = FEET.map((f) => ({ f, pos: this.bones[f.bone].getWorldPosition(new THREE.Vector3()), q: this.bones[f.bone].getWorldQuaternion(new THREE.Quaternion()) }));
+      }
+    } else if (h.type === 'fk' || modes[h.limb] === 'fk') {
       d.mode = 'fk';
-      d.bone = this.bones[h.type === 'fk' ? h.rotates : h.fkRotates];
+      d.bone = this.bones[h.rotates];
       d.joint = d.bone.getWorldPosition(new THREE.Vector3());
       d.from = this.handlePosition(h).sub(d.joint);
       d.startQ = d.bone.getWorldQuaternion(new THREE.Quaternion());
     } else {
       d.mode = 'ik';
-      d.endQ = this.bones[h.bone].getWorldQuaternion(new THREE.Quaternion());
+      const end = this.bones[h.bone];
+      d.endQ = end.getWorldQuaternion(new THREE.Quaternion());
+      // The tip follows the pinch; the wrist/ankle keeps its offset from the
+      // tip because the hand/foot keeps its orientation.
+      d.offset = end.getWorldPosition(new THREE.Vector3()).sub(point);
     }
     return d;
   }
 
   drag(d, point) {
-    if (d.mode === 'move') {
+    if (d.mode === 'move' || d.mode === 'hip') {
       const now = this.root.worldToLocal(point.clone());
       this.bones.hips.position.copy(d.rootStart).add(now.sub(d.parentStart));
       this.root.updateMatrixWorld(true);
+      if (d.mode === 'hip') {
+        for (const { f, pos, q } of d.feet) {
+          this.solveIK(f, pos);
+          setWorldQuaternion(this.bones[f.bone], q);
+        }
+      }
     } else if (d.mode === 'fk') {
       // Swing the bone about its joint so the grabbed spot follows the hand.
       const to = _a.copy(point).add(d.offset).sub(d.joint);

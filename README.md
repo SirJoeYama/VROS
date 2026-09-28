@@ -79,15 +79,18 @@ Stop-motion animation in XR: pose a jointed puppet on a small stage, capture the
 
 | Handle | What it does |
 | --- | --- |
-| **Amber spheres** (chest, head, elbows, knees) | **Forward kinematics**: bend the bone behind the handle (spine, neck, upper arm, thigh) around its joint; everything further down the hierarchy follows. |
-| **Cyan diamonds** (hands, feet) | **Inverse kinematics**: put the hand or foot where you want it; the elbow or knee works out its own bend, in the plane it already bends in (or the natural way when the limb is straight). The hand/foot keeps its orientation. |
-| **White ring** (hips) | Moves the whole puppet. |
+| **Amber spheres** (chest, head, elbows, wrists, knees, ankles) | **Forward kinematics**: bend the bone behind the handle (spine, neck, upper arm, forearm, thigh, shin) around its joint; everything further down the hierarchy follows. |
+| **Diamonds at the fingertips and toe tips** | In **IK** mode (cyan): put the tip where you want it; the elbow or knee works out its own bend (in the plane it already bends in, or the natural way when the limb is straight) and the hand/foot keeps its orientation. In **FK** mode (amber): turn the hand or foot itself at the wrist/ankle. **HANDS** and **FEET** on the timeline switch each between IK and FK. |
+| **Magenta cube** (hips) | Moves the hips while the feet stay planted: the legs re-solve by IK. |
+| **White ring on the floor** | Moves the whole puppet. |
 
-The skeleton is a hierarchy: hips → spine → chest → neck → head, chest → shoulders → elbows → hands, hips → hip joints → knees → feet. The **HANDS: IK / FK** button turns the hand and foot handles into FK handles too (they then rotate the forearm or shin). Both hands can hold handles at once.
+**The whole scene.** Pinch empty space with both hands, like in Galaxies: move your hands to move the stage, pull them apart or together to scale it (¼× to 4×), turn them to turn it. The timeline follows the stage but keeps its size.
 
-**Timeline.** A film strip in front of the stage, poked with a finger: frame cells with stick-figure thumbnails (poke to jump), **PREV / PLAY / NEXT**, **+ FRAME** (copies the current pose into a new frame after it: the stop-motion step), **DELETE**, **ONION** (see-through ghosts of the previous frame in red and the next in blue) and **FPS** (4, 6, 8, 12 or 24). Playback shows each pose as is, with no in-betweens. The animation is saved in the browser.
+The skeleton is a hierarchy: hips → spine → chest → neck → head, chest → shoulders → elbows → hands, hips → hip joints → knees → feet. Both hands can hold handles at once.
 
-Desktop preview: drag handles with the mouse and click the timeline; keys ←/→ frames, space play, N new frame, Delete, O onion, K IK/FK, F fps.
+**Timeline.** A film strip in front of the stage, poked with a finger: frame cells with stick-figure thumbnails (poke to jump), **PREV / PLAY / NEXT**, **+ FRAME** (copies the current pose into a new frame after it: the stop-motion step), **DELETE**, **HANDS** / **FEET** (IK or FK for the tips), **ONION** (see-through ghosts of the previous frame in red and the next in blue) and **FPS** (4, 6, 8, 12 or 24). Playback shows each pose as is, with no in-betweens. The animation is saved in the browser.
+
+Desktop preview: drag handles with the mouse, scale the scene with the wheel, click the timeline; keys ←/→ frames, space play, N new frame, Delete, O onion, H / J hands / feet IK⇄FK, F fps.
 
 ## Run it on your Quest 3
 
