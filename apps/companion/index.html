@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#04050a" />
+  <title>Pip · VROS</title>
+  <link rel="manifest" href="../../manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "@anthropic-ai/sdk": "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.129.0/+esm"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="overlay">
+    <a class="home" href="../../">← Home</a>
+    <h1>PIP</h1>
+    <p class="sub">a pocket companion you talk to; it talks back</p>
+    <button id="enter" disabled>Checking WebXR…</button>
+    <form id="key-form" class="row">
+      <input id="key" type="password" autocomplete="off" placeholder="Anthropic API key (sk-ant-…)" />
+      <button>Save</button>
+    </form>
+    <p id="key-note" class="note"></p>
+    <div class="row">
+      <button id="talk" type="button">Talk</button>
+      <select id="voice" title="Pip's voice"></select>
+    </div>
+    <form id="ask-form" class="row">
+      <input id="ask" type="text" autocomplete="off" placeholder="or type a question" />
+      <button>Ask</button>
+    </form>
+    <p id="status"></p>
+    <dl class="legend">
+      <dt>Pinch (tap)</dt><dd>start or stop talking with Pip; while it answers, hush it</dd>
+      <dt>Just talk</dt><dd>Pip listens after each answer, so you can keep the conversation going</dd>
+      <dt>Poke the buttons</dt><dd>TALK · HUSH (stop the answer) · FORGET (clear the conversation)</dd>
+      <dt>Poke the screen</dt><dd>tickle Pip</dd>
+      <dt>Pinch with both hands</dt><dd>move, scale and turn Pip</dd>
+      <dt>Palms together (hold)</dt><dd>close the app, back to home</dd>
+      <dt>Palm toward your eyes (hold)</dt><dd>show or hide this help in XR</dd>
+    </dl>
+    <p class="desk">Desktop: click the egg or Talk to speak, or type a question · Pip answers with Claude using your own API key, sent only to Anthropic</p>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -8,6 +8,7 @@ const APPS = [
   { id: 'holodex', name: 'Holodex', blurb: 'browse the web; tabs on a Rolodex' },
   { id: 'marionette', name: 'Marionette', blurb: 'pose a puppet, animate it frame by frame' },
   { id: 'cinema', name: 'Cinema', blurb: 'a media player you control with gestures' },
+  { id: 'companion', name: 'Pip', blurb: 'a pocket companion you can talk to' },
 ];
 
 const grid = document.getElementById('grid');

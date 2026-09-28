@@ -7,7 +7,7 @@ import { setupEnterXR } from '../../../shared/xr.js';
 import { FistTwist } from '../../../shared/fistTwist.js';
 import { Doc } from './doc.js';
 import { Page, PAGE_H } from './page.js';
-import { Speech, micPermission } from './speech.js';
+import { Speech, micPermission } from '../../../shared/speech.js';
 import { Buttons } from './buttons.js';
 
 const params = new URLSearchParams(location.search);
