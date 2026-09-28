@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#04050a" />
+  <title>Scribe · VROS</title>
+  <link rel="manifest" href="../../manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="overlay">
+    <a class="home" href="../../">← Home</a>
+    <h1>SCRIBE</h1>
+    <p class="sub">speak, and your words land on a floating page</p>
+    <button id="enter" disabled>Checking WebXR…</button>
+    <div class="row">
+      <button id="mic">Start dictation</button>
+      <button id="copy">Copy text</button>
+    </div>
+    <p id="status"></p>
+    <dl class="legend">
+      <dt>Speak</dt><dd>text appears on the page</dd>
+      <dt>Touch a word</dt><dd>highlights it</dd>
+      <dt>Pinch on a word</dt><dd>selects it (drag to select more), then say what goes there</dd>
+      <dt>Fist + twist</dt><dd>scroll: clockwise down, counter-clockwise up</dd>
+      <dt>Buttons below</dt><dd>mic on/off · undo · recenter the page</dd>
+      <dt>Say</dt><dd>"new line", "delete that", "undo"</dd>
+    </dl>
+    <p class="desk">Desktop preview: click / drag = pinch-select · wheel = scroll</p>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

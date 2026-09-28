@@ -36,6 +36,22 @@ Controllers work too: trigger = pinch, grip = palm, A/X and B/Y = next/previous 
 
 To add a formation, add an entry to `apps/galaxies/src/apps.js` with a name, two colors and a `target(i, t, R, out)` function that returns each particle's home position. The dock and desktop buttons pick it up automatically.
 
+## Scribe
+
+Speech to text on a floating A4 page (portrait). Talk and your words appear on the page.
+
+| Gesture | Effect |
+| --- | --- |
+| **Speak** | Text is written at the end of the page (partial words show in blue while you talk). |
+| **Touch a word** | Highlights it. |
+| **Pinch on a word** | Selects it; keep pinching and drag to select more words. Then say what should go there. Pinch empty space to cancel. |
+| **Fist + twist** | Scrolls like a knob: clockwise scrolls down, counter-clockwise scrolls up. |
+| **Buttons under the page** | Poke with your index finger: mic on/off, undo, recenter the page in front of you. |
+
+Voice commands: "new line", "delete that" (removes the selection), "undo" / "scratch that". The text is saved in the browser, so it's still there next time.
+
+Speech recognition: on Quest, Scribe runs [Whisper](https://huggingface.co/Xenova/whisper-tiny.en) on the headset (English, about 40 MB downloaded once on first use). Elsewhere it uses the browser's built-in recognition when available and falls back to Whisper if that fails. `?engine=whisper` or `?engine=web` forces one; `?model=base` uses the larger, more accurate Whisper model.
+
 ## Run it on your Quest 3
 
 WebXR needs a secure origin (HTTPS or `localhost`).
@@ -43,7 +59,7 @@ WebXR needs a secure origin (HTTPS or `localhost`).
 **Option A: GitHub Pages (easiest)**
 1. In the repo on GitHub, go to **Settings → Pages → Source** and choose **GitHub Actions**.
 2. Push to `main`. The workflow in `.github/workflows/pages.yml` publishes the site.
-3. On the Quest, open the Pages URL in the Browser, pick **Galaxies** and tap **Enter (passthrough)**. Put the controllers down and your hands take over.
+3. On the Quest, open the Pages URL in the Browser, pick an app and tap **Enter (passthrough)**. Put the controllers down and your hands take over.
 4. Optional: install it from the Browser menu as an app so it shows up in your library.
 
 **Option B: local over USB**
@@ -71,4 +87,15 @@ apps/galaxies/
   src/launcher.js   palm-up formation dock
   src/handsView.js  glowing joint visualization
   src/text.js       canvas text sprites
+apps/scribe/
+  index.html        overlay + import map
+  icon.svg          home screen icon
+  src/main.js       renderer, XR session, gestures (select, twist-scroll), main loop
+  src/doc.js        the text, selection, replacement and undo
+  src/page.js       A4 page: layout, drawing, hit testing, scrolling
+  src/speech.js     speech recognition (built-in or Whisper) + voice activity gate
+  src/whisper-worker.js  Whisper in a worker via transformers.js
+  src/buttons.js    pokeable buttons under the page
 ```
+
+Scribe reuses the hand tracking from Galaxies (`apps/galaxies/src/input.js`, `handsView.js`).
