@@ -22,15 +22,17 @@
     <p id="status"></p>
     <dl class="legend">
       <dt>Pinch a handle, move</dt><dd>pose the puppet</dd>
-      <dt>Amber spheres (FK)</dt><dd>bend chest, head, upper arms, thighs; everything below follows</dd>
-      <dt>Cyan diamonds (IK)</dt><dd>place hands and feet; elbows and knees bend to follow</dd>
-      <dt>White ring</dt><dd>move the whole puppet</dd>
-      <dt>Poke the timeline</dt><dd>+ FRAME copies this pose into a new frame; pick frames, play, delete</dd>
+      <dt>Amber spheres (FK)</dt><dd>chest, head, elbows, wrists, knees, ankles: bend the bone behind; the rest follows</dd>
+      <dt>Diamonds at finger / toe tips</dt><dd>IK (cyan): place the tip, the limb follows · FK (amber): turn the hand / foot</dd>
+      <dt>Magenta cube</dt><dd>move the hips, feet stay planted</dd>
+      <dt>White ring on the floor</dt><dd>move the whole puppet</dd>
+      <dt>Pinch empty space, both hands</dt><dd>move, scale and turn the whole scene</dd>
+      <dt>Poke the timeline</dt><dd>+ FRAME copies this pose into a new frame · HANDS / FEET switch IK ⇄ FK</dd>
       <dt>Onion skin</dt><dd>ghosts of the previous (red) and next (blue) frames</dd>
       <dt>Palms together (hold)</dt><dd>close the app, back to home</dd>
       <dt>Palm toward your eyes (hold)</dt><dd>show or hide this help in XR</dd>
     </dl>
-    <p class="desk">Desktop: drag handles with the mouse · click the timeline · ←/→ frames · space play · N new frame · Del delete · O onion · K IK/FK · F fps</p>
+    <p class="desk">Desktop: drag handles with the mouse · wheel = scale the scene · click the timeline · ←/→ frames · space play · N new frame · Del delete · O onion · H / J hands / feet IK⇄FK · F fps</p>
   </div>
   <script type="module" src="src/main.js"></script>
 </body>

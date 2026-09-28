@@ -13,7 +13,7 @@ export class Timeline extends EventTarget {
     this.playing = false;
     this.fps = 8;
     this.onion = true;
-    this.limbMode = 'ik';
+    this.modes = { hand: 'ik', foot: 'ik' }; // IK or FK for the hand and foot tips
     this.version = 0; // bumps on any change the panel shows
     this._clock = 0;
     try {
@@ -80,8 +80,8 @@ export class Timeline extends EventTarget {
     this._changed(false);
   }
 
-  toggleLimbMode() {
-    this.limbMode = this.limbMode === 'ik' ? 'fk' : 'ik';
+  toggleMode(limb) {
+    this.modes[limb] = this.modes[limb] === 'ik' ? 'fk' : 'ik';
     this._changed(false);
   }
 
@@ -149,13 +149,14 @@ export class TimelinePanel {
   _buttons() {
     const tl = this.tl;
     return [
-      ['prev', '◀  PREV'],
-      ['play', tl.playing ? '❚❚  PAUSE' : '▶  PLAY'],
-      ['next', 'NEXT  ▶'],
+      ['prev', '◀ PREV'],
+      ['play', tl.playing ? '❚❚ PAUSE' : '▶ PLAY'],
+      ['next', 'NEXT ▶'],
       ['add', '+ FRAME'],
       ['delete', 'DELETE'],
       ['onion', 'ONION', tl.onion],
-      ['limb', tl.limbMode === 'ik' ? 'HANDS: IK' : 'HANDS: FK', tl.limbMode === 'ik'],
+      ['hands', 'HANDS ' + tl.modes.hand.toUpperCase(), tl.modes.hand === 'ik'],
+      ['feet', 'FEET ' + tl.modes.foot.toUpperCase(), tl.modes.foot === 'ik'],
       ['fps', `${tl.fps} FPS`],
     ];
   }
@@ -234,7 +235,7 @@ export class TimelinePanel {
       g.lineWidth = 2;
       g.stroke();
       g.fillStyle = '#dfe6ff';
-      g.font = `500 21px ${FONT}`;
+      g.font = `500 19px ${FONT}`;
       g.textAlign = 'center';
       g.fillText(label, x + bw / 2, BTN_Y + BTN_H / 2);
       this.regions.push({ id, x, y: BTN_Y, w: bw, h: BTN_H });
