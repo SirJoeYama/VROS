@@ -2,6 +2,7 @@
 // index.html and an icon.svg; add an entry here to put it on the home screen.
 const APPS = [
   { id: 'galaxies', name: 'Galaxies', blurb: 'particle formations you shape with your hands' },
+  { id: 'scribe', name: 'Scribe', blurb: 'dictate onto a floating A4 page' },
 ];
 
 const grid = document.getElementById('grid');
