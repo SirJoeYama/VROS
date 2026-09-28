@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#04050a" />
+  <title>Holodex · VROS</title>
+  <link rel="manifest" href="../../manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <aside id="rolodex-pane">
+    <header>
+      <a class="home" href="../../">← Home</a>
+      <h1>HOLODEX</h1>
+      <span id="count"></span>
+    </header>
+    <div id="rolodex"><div id="drum"></div></div>
+    <div class="pane-buttons">
+      <button id="new-tab">＋ New card</button>
+      <button id="enter" disabled>Checking WebXR…</button>
+      <button id="help-toggle" title="Gestures">?</button>
+    </div>
+    <dl class="legend" id="help" hidden>
+      <dt>Scroll / drag the Rolodex</dt><dd>flip through your tabs (desktop)</dd>
+      <dt>Swipe in front of the cards</dt><dd>spin the Rolodex in XR</dd>
+      <dt>Poke the front card</dt><dd>open that tab (leaves XR)</dd>
+      <dt>Palms together (hold)</dt><dd>close the app, back to home</dd>
+      <dt>Palm toward your eyes (hold)</dt><dd>show or hide this help in XR</dd>
+    </dl>
+  </aside>
+  <main>
+    <form id="nav">
+      <button type="button" id="back" title="Back">‹</button>
+      <button type="button" id="forward" title="Forward">›</button>
+      <button type="button" id="reload" title="Reload">↻</button>
+      <input id="address" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Search or type an address" />
+      <button type="button" id="popout" title="Open in its own window">↗</button>
+    </form>
+    <div id="viewer">
+      <section id="start" hidden>
+        <h2>New card</h2>
+        <form id="start-search"><input id="start-query" type="text" placeholder="Search the web or type an address" autocomplete="off" /></form>
+        <div id="quick-links"></div>
+      </section>
+      <section id="blocked" hidden>
+        <h2><span id="blocked-host"></span> won't open inside another page</h2>
+        <p>This site blocks being embedded, so it has to open in its own browser window.</p>
+        <button id="blocked-open">Open in window ↗</button>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
