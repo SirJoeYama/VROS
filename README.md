@@ -8,6 +8,8 @@ It runs as a WebXR page in the Quest Browser, with passthrough when it's availab
 
 Opening the site shows a start screen with an icon for each app. Tap one to launch it; each app has a **← Home** link to come back.
 
+**Close an app:** press both palms together in front of you (prayer pose) and hold for about a second. A ring fills up between your hands; when it closes, the app exits and you're back on the home screen. Works in every app.
+
 To add an app, create `apps/<id>/` with an `index.html` and an `icon.svg`, then add an entry to the `APPS` list in `home.js`.
 
 ## Galaxies
@@ -87,6 +89,7 @@ apps/galaxies/
   src/launcher.js   palm-up formation dock
   src/handsView.js  glowing joint visualization
   src/text.js       canvas text sprites
+  src/closeGesture.js  palms-together gesture to close an app (shared)
 apps/scribe/
   index.html        overlay + import map
   icon.svg          home screen icon
@@ -98,4 +101,4 @@ apps/scribe/
   src/buttons.js    pokeable buttons under the page
 ```
 
-Scribe reuses the hand tracking from Galaxies (`apps/galaxies/src/input.js`, `handsView.js`).
+Scribe reuses the hand tracking and close gesture from Galaxies (`apps/galaxies/src/input.js`, `handsView.js`, `closeGesture.js`).
