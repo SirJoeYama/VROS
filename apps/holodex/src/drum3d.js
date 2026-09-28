@@ -69,15 +69,15 @@ function drawCard(ctx, tab, slot) {
   ctx.fillText(titleOf(tab).slice(0, 22), 110, 90);
   ctx.fillStyle = '#6b5f4a';
   ctx.font = `26px ${FONT}`;
-  const url = tab.url || 'type an address in the 2D view';
+  const url = tab.url || 'empty: set an address in window mode';
   ctx.fillText(url.length > 40 ? url.slice(0, 39) + '…' : url, 30, 158);
 }
 
-// A 3D Rolodex of the open tabs. Cards hinge on the axle: the front card
-// stands up, the ones behind fan backwards, flipped ones tip toward you and
-// down. Swipe up or down in the air just in front of the front card to flip;
-// poke it to open that tab. Controllers and
-// the mouse pinch-drag to spin and pinch-release on the front card to open.
+// A 3D Rolodex of the cards. Cards hinge on the axle: the front card stands
+// up, the ones behind fan backwards, flipped ones tip toward you and down.
+// Swipe up or down in the air just in front of the front card to flip; poke
+// it to open it. Controllers and the mouse pinch-drag to spin and
+// pinch-release on the front card to open. A hint line floats above.
 export class Drum3D {
   constructor(tabs, onPick) {
     this.tabs = tabs;
@@ -104,6 +104,21 @@ export class Drum3D {
       this.group.add(knob);
     }
     this.group.add(axle, this.slot);
+
+    const hc = document.createElement('canvas');
+    hc.width = 1024;
+    hc.height = 96;
+    this.hintCtx = hc.getContext('2d');
+    this.hintTex = new THREE.CanvasTexture(hc);
+    this.hintTex.colorSpace = THREE.SRGBColorSpace;
+    this.hint = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.32, 0.03),
+      new THREE.MeshBasicMaterial({ map: this.hintTex, transparent: true, depthWrite: false }),
+    );
+    this.hint.position.set(0, CARD_H + 0.07, -0.03);
+    this.hint.rotation.x = -LEAN;
+    this.group.add(this.hint);
+    this.setHint('pinch to open the front card');
     this.sync();
   }
 
@@ -150,6 +165,30 @@ export class Drum3D {
       c.mesh.geometry.dispose();
       this.cards.delete(id);
     }
+  }
+
+  setHint(text) {
+    if (text === this._hint) return;
+    this._hint = text;
+    const g = this.hintCtx, W = g.canvas.width, H = g.canvas.height;
+    g.clearRect(0, 0, W, H);
+    this.hint.visible = !!text;
+    if (!text) return;
+    g.font = '400 44px system-ui, -apple-system, "Segoe UI", sans-serif';
+    const w = Math.min(W - 8, g.measureText(text).width + 60);
+    g.fillStyle = 'rgba(8, 10, 20, 0.75)';
+    g.beginPath();
+    g.roundRect((W - w) / 2, 8, w, H - 16, (H - 16) / 2);
+    g.fill();
+    g.fillStyle = '#dfe6ff';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText(text, W / 2, H / 2 + 2, W - 60);
+    this.hintTex.needsUpdate = true;
+  }
+
+  get front() {
+    return this.tabs.list[this.frontIndex];
   }
 
   get frontIndex() {
