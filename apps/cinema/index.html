@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#04050a" />
+  <title>Cinema · VROS</title>
+  <link rel="manifest" href="../../manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="overlay">
+    <a class="home" href="../../">← Home</a>
+    <h1>CINEMA</h1>
+    <p class="sub">a floating screen you control with your hands</p>
+    <button id="enter" disabled>Checking WebXR…</button>
+    <div class="row">
+      <label class="button">Open files…<input id="files" type="file" accept="video/*,audio/*" multiple hidden /></label>
+      <button id="playpause">Play</button>
+    </div>
+    <form id="url-form" class="row"><input id="url" type="url" placeholder="or paste a video / audio link" /><button>Add</button></form>
+    <p id="time"></p>
+    <p id="status"></p>
+    <ol id="playlist"></ol>
+    <dl class="legend">
+      <dt>Pinch (tap)</dt><dd>play / pause</dd>
+      <dt>Fist + twist</dt><dd>clockwise fast-forwards, counter-clockwise rewinds (one turn = one minute)</dd>
+      <dt>Pinch with both hands</dt><dd>move, scale and turn the screen</dd>
+      <dt>Remote by your hands</dt><dd>poke: prev · −10 s · play · +10 s · next · the bar to seek</dd>
+      <dt>Palms together (hold)</dt><dd>close the app, back to home</dd>
+      <dt>Palm toward your eyes (hold)</dt><dd>show or hide this help in XR</dd>
+    </dl>
+    <p class="desk">Desktop: click = play/pause · wheel = scrub · ←/→ ±10 s · space · N / P next / previous</p>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

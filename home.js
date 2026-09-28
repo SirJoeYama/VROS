@@ -7,6 +7,7 @@ const APPS = [
   { id: 'scribe', name: 'Scribe', blurb: 'dictate onto a floating A4 page' },
   { id: 'holodex', name: 'Holodex', blurb: 'browse the web; tabs on a Rolodex' },
   { id: 'marionette', name: 'Marionette', blurb: 'pose a puppet, animate it frame by frame' },
+  { id: 'cinema', name: 'Cinema', blurb: 'a media player you control with gestures' },
 ];
 
 const grid = document.getElementById('grid');
