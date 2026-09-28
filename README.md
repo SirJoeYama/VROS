@@ -71,6 +71,21 @@ A web browser whose tabs are index cards on a Rolodex.
 
 Limits that come from the web platform, not the app: a page can't draw other websites inside an immersive XR view, so pages are always read in the 2D view; and many big sites (Google, GitHub, X, Reddit, …) refuse to be shown inside another page. Those tabs show an **Open in window** button instead. YouTube video links are switched to YouTube's embeddable player. Only addresses typed or picked in Holodex are tracked, so ‹ › don't follow links clicked inside a page.
 
+## Marionette
+
+A wooden puppet on a small stage in front of you, hanging on glowing strings from your fingertips. It's simulated with physics, so it swings, sways and slumps.
+
+| Your hand | Pulls the puppet's |
+| --- | --- |
+| **Index fingers** | hands |
+| **Middle fingers** | head |
+| **Ring fingers** | knees (lift one, then the other, to walk) |
+| **Palms** | shoulders |
+
+Each hand works the strings on its own side as you look at the stage. Strings attach at whatever length they have when your hands appear, so picking the puppet up never jerks it; move your hands away (or make a fist) and they go slack. **Two fists, held a second** stand the puppet back up in front of you. Taut strings glow brighter.
+
+With controllers each one is half a control bar (trigger lifts a hand, grip lifts a knee). Desktop preview: the pointer is the control bar; hold the left button to wave, the right button to walk.
+
 ## Run it on your Quest 3
 
 WebXR needs a secure origin (HTTPS or `localhost`).
@@ -127,4 +142,7 @@ apps/holodex/
   src/ui.js         2D Rolodex drum and page viewer
   src/drum3d.js     the Rolodex in XR
   src/main.js       wires the 2D view and XR together
+apps/marionette/
+  src/puppet.js     the puppet: Verlet physics, strings, body, stage
+  src/main.js       fingertips / controllers / pointer → strings, XR
 ```

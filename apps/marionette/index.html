@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#04050a" />
+  <title>Marionette · VROS</title>
+  <link rel="manifest" href="../../manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="overlay">
+    <a class="home" href="../../">← Home</a>
+    <h1>MARIONETTE</h1>
+    <p class="sub">a puppet on strings from your fingertips</p>
+    <button id="enter" disabled>Checking WebXR…</button>
+    <div class="row"><button id="reset">Stand the puppet up</button></div>
+    <p id="status"></p>
+    <dl class="legend">
+      <dt>Index fingers</dt><dd>the puppet's hands</dd>
+      <dt>Middle fingers</dt><dd>its head</dd>
+      <dt>Ring fingers</dt><dd>its knees: lift to walk</dd>
+      <dt>Palms</dt><dd>its shoulders</dd>
+      <dt>Hands away</dt><dd>strings go slack, the puppet slumps</dd>
+      <dt>Two fists (hold)</dt><dd>stand it back up in front of you</dd>
+      <dt>Palms together (hold)</dt><dd>close the app, back to home</dd>
+      <dt>Palm toward your eyes (hold)</dt><dd>show or hide this help in XR</dd>
+    </dl>
+    <p class="desk">Desktop preview: move the pointer = control bar · hold left button = wave · hold right button = walk. Controllers: trigger lifts a hand, grip lifts a knee.</p>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
