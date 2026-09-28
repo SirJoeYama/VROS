@@ -81,7 +81,7 @@ addEventListener('keydown', (e) => {
 function boot() {
   field.setApp(APPS[appIndex]);
   field.scatter(world.cx, world.cy, world.cz, 1.5, 3.5);
-  title.flash('VROS', 'spatial shell', 2.2);
+  title.flash('Galaxies', 'VROS', 2.2);
   setTimeout(() => switchApp(appIndex), 2600);
 }
 boot();
