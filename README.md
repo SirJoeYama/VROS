@@ -105,6 +105,22 @@ A media player on a big floating screen, controlled with your hands.
 
 Pick what to play in window mode: **Open files…** (video or audio from the headset's storage) or paste a link. Two free samples are loaded to start with. Audio files show a title card instead of a picture. Links from other sites only show a picture if the site allows it (CORS); local files always work. Desktop preview: click to play/pause, the wheel scrubs, ←/→ jump 10 s.
 
+## Pip
+
+A pocket companion that lives in a little egg-shaped gadget with a pixel screen, like the virtual pets of the 90s. Ask it anything out loud and it answers out loud, like a personal assistant. It thinks with Claude (`claude-opus-5-5`, with web search for anything recent) and remembers the conversation until you tell it to forget.
+
+| Gesture | Effect |
+| --- | --- |
+| **Pinch (a quick tap)** | Start talking with Pip; tap again to stop. While Pip is answering, a tap hushes it. |
+| **Just talk** | After each answer Pip listens again, so you can keep the conversation going. It stops after 30 s of silence. |
+| **Poke the buttons** | TALK · HUSH (stop the answer) · FORGET (clear the conversation). |
+| **Poke the screen** | Tickle Pip. |
+| **Pinch with both hands** | Move, scale and turn Pip. |
+
+The screen shows what Pip is doing: listening (antenna blinking, sound waves), thinking, searching the web (a globe), speaking (a moving mouth), or asleep after a while with nothing to do. A speech bubble above the egg shows what it heard and its answer.
+
+**Setup:** Pip needs an [Anthropic API key](https://console.anthropic.com/settings/keys). Paste it in window mode; it is kept in this browser's local storage and sent only to `api.anthropic.com`. There is no server; the page calls the API straight from the browser, so each question is billed to your key. The first tap on **Enter** asks for the microphone, because the permission prompt can't appear inside XR. Speech recognition works like Scribe's (Whisper on the headset). Answers are spoken with the browser's built-in voices; pick one in window mode. Desktop preview: click the egg or **Talk**, or type a question.
+
 ## Run it on your Quest 3
 
 WebXR needs a secure origin (HTTPS or `localhost`).
@@ -138,8 +154,10 @@ shared/             used by the home screen and every app
   pointsMaterial.js glowing point shader
   closeGesture.js   palms together → close the app (home: leave XR)
   fistTwist.js      fist + twist as a knob (Scribe scrolling, Cinema scrubbing)
-  sceneGrab.js      two-hand pinch → move / scale / turn (Marionette, Cinema)
+  sceneGrab.js      two-hand pinch → move / scale / turn (Marionette, Cinema, Pip)
   helpGesture.js    palm toward your eyes → help card
+  speech.js         speech recognition (built-in or Whisper) + voice activity gate (Scribe, Pip)
+  whisper-worker.js Whisper in a worker via transformers.js
 apps/galaxies/
   index.html        overlay + import map (three.js from jsDelivr, no build step)
   icon.svg          home screen icon
@@ -154,8 +172,6 @@ apps/scribe/
   src/main.js       renderer, XR session, gestures (select, twist-scroll), main loop
   src/doc.js        the text, selection, replacement and undo
   src/page.js       A4 page: layout, drawing, hit testing, scrolling
-  src/speech.js     speech recognition (built-in or Whisper) + voice activity gate
-  src/whisper-worker.js  Whisper in a worker via transformers.js
   src/buttons.js    pokeable buttons under the page
 apps/holodex/
   index.html        browser layout: Rolodex pane, address bar, page viewer
@@ -171,4 +187,11 @@ apps/cinema/
   src/player.js     playlist and playback on one <video> element
   src/remote.js     the pokeable remote: title, time, progress bar, buttons
   src/main.js       screen, on-screen feedback, pinch / twist / two-hand gestures, XR
+apps/companion/     Pip
+  src/brain.js      Claude from the browser: conversation, streaming, sentences to speak
+  src/voice.js      spoken answers (speech synthesis), voice choice
+  src/pet.js        the egg: shell, keychain, bezel, buttons, hit testing
+  src/lcd.js        the 48 × 32 pixel screen and the creature's moods
+  src/bubble.js     speech bubble: what you said, the answer, status
+  src/main.js       listening → thinking → speaking loop, gestures, XR
 ```

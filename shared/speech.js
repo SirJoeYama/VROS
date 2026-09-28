@@ -174,7 +174,7 @@ class WhisperEngine {
         ]);
       } catch {
         owner.active = false;
-        owner.onStatus('microphone not allowed: leave XR and tap Start dictation');
+        owner.onStatus('microphone not allowed: leave XR and allow it in window mode');
         return;
       }
       this.ctx = new AudioContext({ sampleRate: 16000 });
