@@ -6,6 +6,7 @@ import { HandsView } from './handsView.js';
 import { Launcher } from './launcher.js';
 import { TextSprite } from './text.js';
 import { CloseGesture } from './closeGesture.js';
+import { HelpGesture } from './helpGesture.js';
 
 const params = new URLSearchParams(location.search);
 const isQuest = /OculusBrowser|Quest/i.test(navigator.userAgent);
@@ -51,6 +52,8 @@ scene.add(grabLine);
 const input = new Input(renderer, camera);
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
+const help = HelpGesture.fromPage();
+scene.add(help.group);
 
 // ---------- apps ----------
 let appIndex = 0;
@@ -138,6 +141,7 @@ renderer.xr.addEventListener('sessionstart', () => {
 });
 renderer.xr.addEventListener('sessionend', () => {
   document.body.classList.remove('in-xr');
+  help.hide();
   scene.background = BG;
   world.cx = 0; world.cy = 1.35; world.cz = -0.8;
   placeDesktopCamera();
@@ -186,7 +190,10 @@ renderer.setAnimationLoop((time, frame) => {
   last = now;
   t += dt;
 
-  if (frame && needRecenter && recenter(frame)) needRecenter = false;
+  if (frame && needRecenter && recenter(frame)) {
+    needRecenter = false;
+    help.hint(renderer.xr.getCamera());
+  }
 
   center.set(world.cx, world.cy, world.cz);
   input.update(frame, dt, center);
@@ -206,6 +213,7 @@ renderer.setAnimationLoop((time, frame) => {
   viewerRight.setFromMatrixColumn(xrCam.matrixWorld, 0);
   const menuHand = launcher.update(hands, dt, t, appIndex, viewerRight);
   closeGesture.update(hands, dt, xrCam);
+  const helpHand = help.update(hands, dt, xrCam);
 
   // Two pinching hands grab the whole formation: move, scale, and turn it.
   const pinching = hands.filter((h) => h.pinch && h !== menuHand);
@@ -236,7 +244,7 @@ renderer.setAnimationLoop((time, frame) => {
   // Open palms push particles like wind.
   F.pushers.length = 0;
   for (const h of hands) {
-    if (!h.open || h.palmUp || h === menuHand) continue;
+    if (!h.open || h.palmUp || h === menuHand || h === helpHand) continue;
     F.pushers.push({
       x: h.palmCenter.x, y: h.palmCenter.y, z: h.palmCenter.z,
       nx: h.palmNormal.x, ny: h.palmNormal.y, nz: h.palmNormal.z,

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Input } from '../../galaxies/src/input.js';
 import { HandsView } from '../../galaxies/src/handsView.js';
 import { CloseGesture } from '../../galaxies/src/closeGesture.js';
+import { HelpGesture } from '../../galaxies/src/helpGesture.js';
 import { Doc } from './doc.js';
 import { Page, PAGE_H } from './page.js';
 import { Speech } from './speech.js';
@@ -39,6 +40,8 @@ scene.add(handsView.points);
 const input = new Input(renderer, camera);
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
+const help = HelpGesture.fromPage();
+scene.add(help.group);
 
 // ---------- speech ----------
 const status = document.getElementById('status');
@@ -147,6 +150,8 @@ renderer.xr.addEventListener('sessionstart', () => {
 });
 renderer.xr.addEventListener('sessionend', () => {
   document.body.classList.remove('in-xr');
+  help.hide();
+  hinted = false;
   scene.background = BG;
   placeDesktop();
   onResize();
@@ -232,6 +237,7 @@ function updateGestures(hands, dt) {
 
 // ---------- main loop ----------
 let t = 0, last = 0;
+let hinted = false; // the help tip shows once per XR session
 
 renderer.setAnimationLoop((time, frame) => {
   const now = time / 1000;
@@ -239,7 +245,11 @@ renderer.setAnimationLoop((time, frame) => {
   last = now;
   t += dt;
 
-  if (frame && needRecenter && recenter(frame)) needRecenter = false;
+  if (frame && needRecenter && recenter(frame)) {
+    if (!hinted) help.hint(renderer.xr.getCamera());
+    hinted = true;
+    needRecenter = false;
+  }
 
   page.mesh.getWorldPosition(center);
   input.update(frame, dt, center);
@@ -254,7 +264,9 @@ renderer.setAnimationLoop((time, frame) => {
   }
 
   updateGestures(input.hands, dt);
-  closeGesture.update(input.hands, dt, renderer.xr.isPresenting ? renderer.xr.getCamera() : camera);
+  const viewer = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
+  closeGesture.update(input.hands, dt, viewer);
+  help.update(input.hands, dt, viewer);
 
   const hint = doc.sel ? 'say the replacement · "delete that" removes it' : '';
   page.status = [speechStatus, hint].filter(Boolean).join('   ·   ');

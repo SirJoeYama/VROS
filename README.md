@@ -10,6 +10,8 @@ Opening the site shows a start screen with an icon for each app. Tap one to laun
 
 **Close an app:** press both palms together in front of you (prayer pose) and hold for about a second. A ring fills up between your hands; when it closes, the app exits and you're back on the home screen. Works in every app.
 
+**Help in XR:** hold an open hand up near eye height with the palm facing your eyes (like reading a note in your hand) for half a second. A card with the app's gestures appears in front of you; do it again to hide it. A short tip about this shows when you enter XR. The card lists the same gestures as the app's page overlay (`<dl class="legend">`), so there is one list to keep up to date.
+
 To add an app, create `apps/<id>/` with an `index.html` and an `icon.svg`, then add an entry to the `APPS` list in `home.js`.
 
 ## Galaxies
@@ -90,6 +92,7 @@ apps/galaxies/
   src/handsView.js  glowing joint visualization
   src/text.js       canvas text sprites
   src/closeGesture.js  palms-together gesture to close an app (shared)
+  src/helpGesture.js   palm-toward-eyes gesture to show help in XR (shared)
 apps/scribe/
   index.html        overlay + import map
   icon.svg          home screen icon
@@ -101,4 +104,4 @@ apps/scribe/
   src/buttons.js    pokeable buttons under the page
 ```
 
-Scribe reuses the hand tracking and close gesture from Galaxies (`apps/galaxies/src/input.js`, `handsView.js`, `closeGesture.js`).
+Scribe reuses the hand tracking, close and help gestures from Galaxies (`apps/galaxies/src/input.js`, `handsView.js`, `closeGesture.js`, `helpGesture.js`).
