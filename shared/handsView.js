@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makePointsMaterial } from './particles.js';
+import { makePointsMaterial } from './pointsMaterial.js';
 import { JOINTS, TIPS } from './input.js';
 
 const MAX = JOINTS.length * 3; // left, right, mouse

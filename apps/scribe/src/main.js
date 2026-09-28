@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import { Input } from '../../galaxies/src/input.js';
-import { HandsView } from '../../galaxies/src/handsView.js';
-import { CloseGesture } from '../../galaxies/src/closeGesture.js';
-import { HelpGesture } from '../../galaxies/src/helpGesture.js';
+import { Input } from '../../../shared/input.js';
+import { HandsView } from '../../../shared/handsView.js';
+import { CloseGesture } from '../../../shared/closeGesture.js';
+import { HelpGesture } from '../../../shared/helpGesture.js';
+import { setupEnterXR } from '../../../shared/xr.js';
 import { Doc } from './doc.js';
 import { Page, PAGE_H } from './page.js';
 import { Speech } from './speech.js';
@@ -104,47 +105,18 @@ const buttons = new Buttons([
 page.group.add(buttons.group);
 
 // ---------- XR session ----------
-const enterBtn = document.getElementById('enter');
-let sessionMode = null;
-
-async function detectXR() {
-  if (!navigator.xr) {
-    enterBtn.textContent = 'XR not available';
-    return;
-  }
-  for (const mode of ['immersive-ar', 'immersive-vr']) {
-    if (await navigator.xr.isSessionSupported(mode).catch(() => false)) {
-      sessionMode = mode;
-      break;
-    }
-  }
-  if (!sessionMode) {
-    enterBtn.textContent = 'XR not available';
-    return;
-  }
-  enterBtn.disabled = false;
-  enterBtn.textContent = sessionMode === 'immersive-ar' ? 'Enter (passthrough)' : 'Enter VR';
-}
-detectXR();
-
-enterBtn.addEventListener('click', async () => {
+const xr = setupEnterXR({
+  renderer,
+  button: document.getElementById('enter'),
+  status,
   // Ask for the mic in the same tap, but don't wait on it: the XR request
   // needs this click's user activation, which a permission prompt can outlast.
-  if (!speech.active) toggleMic();
-  try {
-    const session = await navigator.xr.requestSession(sessionMode, {
-      requiredFeatures: ['local-floor'],
-      optionalFeatures: ['hand-tracking'],
-    });
-    await renderer.xr.setSession(session);
-  } catch (err) {
-    status.textContent = 'Could not start XR: ' + err.message;
-  }
+  beforeEnter: () => { if (!speech.active) toggleMic(); },
 });
 
 renderer.xr.addEventListener('sessionstart', () => {
   document.body.classList.add('in-xr');
-  scene.background = sessionMode === 'immersive-ar' ? null : BG;
+  scene.background = xr.mode === 'immersive-ar' ? null : BG;
   handsView.points.material.uniforms.uScale.value = 1000;
   needRecenter = true;
 });
