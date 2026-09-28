@@ -64,12 +64,14 @@ Speech recognition: on Quest, Scribe runs [Whisper](https://huggingface.co/Xenov
 
 ## Holodex
 
-A web browser whose tabs are index cards on a Rolodex.
+A browser tab manager on a Rolodex: every index card is a real browser tab, so any site opens and works fully (logins, video, everything).
 
-- **2D view** (the normal page): the Rolodex runs down the left. Scroll it, drag it or click a card to flip; the card at the front is the open tab, shown on the right. The address bar searches (DuckDuckGo) or opens an address; ‹ › ↻ go back, forward and reload; ↗ opens the tab in its own browser window. **＋ New card** opens a start page with quick links.
-- **XR**: the same tabs on a 3D Rolodex in front of you. Swipe up or down in the air just in front of the cards to spin it; poke the front card to open that tab, which leaves XR and shows it in the 2D view.
+- **2D view** (the normal page): the Rolodex runs down the left. Scroll it, drag it or click a card to flip; click the front card (or **Open ↗**, or press Enter) to open it. The address bar searches (DuckDuckGo) or takes an address and opens it in the front card's tab. Click the card's name to rename it. **Open here** leaves Holodex and loads the site in the same tab. **＋ New card** opens a start page with quick links.
+- **XR**: the same cards on a 3D Rolodex in front of you. Swipe up or down in the air just in front of the cards to spin it; **pinch** (or poke the front card) to open it. That opens its browser tab and leaves XR.
 
-Limits that come from the web platform, not the app: a page can't draw other websites inside an immersive XR view, so pages are always read in the 2D view; and many big sites (Google, GitHub, X, Reddit, …) refuse to be shown inside another page. Those tabs show an **Open in window** button instead. YouTube video links are switched to YouTube's embeddable player. Only addresses typed or picked in Holodex are tracked, so ‹ › don't follow links clicked inside a page.
+Each card has its own named browser tab, so opening a card again brings its tab back when the browser still knows it, rather than opening another one. Some sites break that link for privacy reasons, and then a fresh tab opens. Go back to Holodex through the browser's tab list. The browser only opens tabs right after a click, key press or pinch; if it blocks one, Holodex says so (allow pop-ups for the site, or use **Open here**).
+
+Why tabs and not a page inside Holodex: most big sites refuse to be shown inside another page, and WebXR can't draw web pages in 3D. Real tabs avoid both limits.
 
 ## Marionette
 
@@ -175,8 +177,9 @@ apps/scribe/
   src/buttons.js    pokeable buttons under the page
 apps/holodex/
   index.html        browser layout: Rolodex pane, address bar, page viewer
-  src/tabs.js       open tabs (saved), address → URL, framing rules
-  src/ui.js         2D Rolodex drum and page viewer
+  src/tabs.js       the cards (saved), address → URL, labels
+  src/launch.js     opening a card as its own named browser tab
+  src/ui.js         2D Rolodex drum and the front card up close
   src/drum3d.js     the Rolodex in XR
   src/main.js       wires the 2D view and XR together
 apps/marionette/

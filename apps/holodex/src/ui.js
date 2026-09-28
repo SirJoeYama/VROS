@@ -1,4 +1,5 @@
-import { normalizeUrl, hostOf, titleOf, frameUrl, framingBlocked } from './tabs.js';
+import { normalizeUrl, hostOf, titleOf } from './tabs.js';
+import { openTab, goTab } from './launch.js';
 
 const PX_PER_CARD = 60; // drag distance that flips one card
 const QUICK_LINKS = [
@@ -18,13 +19,12 @@ function hue(s) {
   return h;
 }
 
-// The 2D browser: a Rolodex of tab cards on the left (flip it by scrolling,
-// dragging, or clicking a card; the front card is the open tab) and the page
-// on the right.
+// The 2D view: a Rolodex of cards on the left (flip it by scrolling, dragging
+// or clicking a card; click the front card to open it) and the front card up
+// close on the right, with its address and Open buttons.
 export function startUI(tabs) {
   const drum = $('drum');
   const cards = new Map(); // tab id → card element
-  const frames = new Map(); // tab id → { iframe, src }
   let pos = tabs.activeIndex; // continuous drum position (card index at the front)
   let target = pos;
   let settleTimer = 0;
@@ -35,22 +35,23 @@ export function startUI(tabs) {
     if (!el) {
       el = document.createElement('div');
       el.className = 'card';
-      el.innerHTML = '<div class="tab"><span class="host"></span></div><button class="close" title="Close tab">×</button><img class="fav" alt="" /><div class="title"></div><div class="url"></div>';
+      el.innerHTML = '<div class="tab"><span class="host"></span></div><button class="close" title="Remove card">×</button><img class="fav" alt="" /><div class="title"></div><div class="url"></div>';
       el.querySelector('.close').addEventListener('click', (e) => {
         e.stopPropagation();
         tabs.close(tab.id);
       });
       el.addEventListener('click', () => {
         if (dragMoved) return;
-        const i = tabs.list.indexOf(tab);
-        target = i;
+        if (tab.id === tabs.activeId) return open(tab);
+        target = tabs.list.indexOf(tab);
         tabs.activate(tab.id);
       });
       cards.set(tab.id, el);
       drum.appendChild(el);
     }
-    if (el.dataset.url !== tab.url) {
-      el.dataset.url = tab.url;
+    const key = tab.url + '\u0000' + tab.title;
+    if (el.dataset.key !== key) {
+      el.dataset.key = key;
       const host = hostOf(tab.url);
       el.querySelector('.host').textContent = host || 'new tab';
       el.querySelector('.title').textContent = titleOf(tab);
@@ -135,6 +136,7 @@ export function startUI(tabs) {
     if (e.target.closest('input')) return;
     if (e.key === 'ArrowDown') flipTo(Math.round(target) + 1);
     else if (e.key === 'ArrowUp') flipTo(Math.round(target) - 1);
+    else if (e.key === 'Enter') open();
   });
 
   $('new-tab').addEventListener('click', () => {
@@ -142,67 +144,75 @@ export function startUI(tabs) {
     $('address').focus();
   });
 
-  // ---------- viewer ----------
-  const viewer = $('viewer');
+  // ---------- the front card, up close ----------
+  // Opening needs the click (or key) that asked for it: browsers only open
+  // tabs from a user action.
+  function open(tab = tabs.active, go = false) {
+    if (!tab.url) return;
+    const ok = go ? goTab(tab) : openTab(tab);
+    $('blocked').hidden = ok;
+    if (ok) tabs.markOpened(tab);
+  }
+
   function showActive() {
     const tab = tabs.active;
-    $('address').value = tab.url;
-    $('back').disabled = !tab.back.length;
-    $('forward').disabled = !tab.fwd.length;
-    $('popout').disabled = !tab.url;
-
-    const blocked = tab.url && framingBlocked(tab.url);
+    if (document.activeElement !== $('address')) $('address').value = tab.url;
     $('start').hidden = !!tab.url;
-    $('blocked').hidden = !blocked;
-    if (blocked) $('blocked-host').textContent = hostOf(tab.url);
-
-    for (const [id, f] of frames) {
-      if (!tabs.list.some((t) => t.id === id)) { f.iframe.remove(); frames.delete(id); }
+    $('card-view').hidden = !tab.url;
+    if (!tab.url) return;
+    const host = hostOf(tab.url);
+    const fav = $('card-fav');
+    fav.onerror = () => {
+      fav.dataset.failed = fav.dataset.host;
+      fav.style.visibility = 'hidden';
+    };
+    fav.style.visibility = host && fav.dataset.failed !== host ? '' : 'hidden';
+    if (host && fav.dataset.host !== host) {
+      fav.dataset.host = host;
+      fav.src = `https://icons.duckduckgo.com/ip3/${host}.ico`;
     }
-    let f = frames.get(tab.id);
-    if (tab.url && !blocked) {
-      const src = frameUrl(tab.url);
-      if (!f) {
-        const iframe = document.createElement('iframe');
-        iframe.allow = 'fullscreen; autoplay; encrypted-media; picture-in-picture; clipboard-write';
-        iframe.referrerPolicy = 'strict-origin-when-cross-origin';
-        viewer.appendChild(iframe);
-        f = { iframe, src: '' };
-        frames.set(tab.id, f);
-      }
-      if (f.src !== src) f.iframe.src = f.src = src;
-    }
-    for (const [id, other] of frames) other.iframe.hidden = id !== tab.id || !tab.url || blocked;
+    if (document.activeElement !== $('card-title')) $('card-title').value = titleOf(tab);
+    $('card-url').textContent = tab.url;
+    $('card-opened').textContent = tab.opened ? 'last opened ' + ago(tab.opened) : 'not opened yet';
   }
 
   $('nav').addEventListener('submit', (e) => {
     e.preventDefault();
-    tabs.navigate(normalizeUrl($('address').value));
+    const url = normalizeUrl($('address').value);
+    if (!url) return;
+    tabs.navigate(url);
     $('address').blur();
+    open(tabs.active, true);
   });
-  $('back').addEventListener('click', () => tabs.back());
-  $('forward').addEventListener('click', () => tabs.forward());
-  $('reload').addEventListener('click', () => {
-    const f = frames.get(tabs.activeId);
-    if (f) f.iframe.src = f.src;
+  $('open').addEventListener('click', () => open());
+  $('open-here').addEventListener('click', () => {
+    const tab = tabs.active;
+    if (!tab.url) return;
+    tabs.markOpened(tab);
+    location.href = tab.url;
   });
-  const popout = () => tabs.active.url && window.open(tabs.active.url, '_blank', 'noopener');
-  $('popout').addEventListener('click', popout);
-  $('blocked-open').addEventListener('click', popout);
+  $('card-title').addEventListener('change', (e) => tabs.rename(tabs.activeId, e.target.value));
+  $('card-title').addEventListener('keydown', (e) => e.key === 'Enter' && e.target.blur());
+  setInterval(showActive, 30000); // keep "last opened …" fresh
 
   const links = $('quick-links');
   for (const [name, url] of QUICK_LINKS) {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = name;
-    b.addEventListener('click', () => tabs.navigate(url));
+    b.addEventListener('click', () => {
+      tabs.navigate(url);
+      open(tabs.active, true);
+    });
     links.appendChild(b);
   }
   $('start-search').addEventListener('submit', (e) => {
     e.preventDefault();
     const q = $('start-query').value;
     $('start-query').value = '';
-    if (q.trim()) tabs.navigate(normalizeUrl(q));
+    if (!q.trim()) return;
+    tabs.navigate(normalizeUrl(q));
+    open(tabs.active, true);
   });
 
   $('help-toggle').addEventListener('click', () => ($('help').hidden = !$('help').hidden));
@@ -217,4 +227,12 @@ export function startUI(tabs) {
   });
   showActive();
   layoutDrum();
+}
+
+function ago(t) {
+  const s = (Date.now() - t) / 1000;
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return new Date(t).toLocaleDateString();
 }

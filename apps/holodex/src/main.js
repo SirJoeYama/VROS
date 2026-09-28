@@ -4,16 +4,17 @@ import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
-import { Tabs } from './tabs.js';
+import { Tabs, titleOf } from './tabs.js';
+import { openTab } from './launch.js';
 import { startUI } from './ui.js';
 import { Drum3D } from './drum3d.js';
 
 const tabs = new Tabs();
 startUI(tabs);
 
-// ---------- XR: the same tabs on a 3D Rolodex ----------
-// Web pages can't be drawn inside an immersive session, so picking a card
-// leaves XR and shows that tab in the 2D browser.
+// ---------- XR: the same cards on a 3D Rolodex ----------
+// Web pages can't be drawn inside an immersive session, so opening a card
+// opens its browser tab and leaves XR.
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
@@ -34,10 +35,22 @@ scene.add(closeGesture.group);
 const help = HelpGesture.fromPage();
 scene.add(help.group);
 
-const drum = new Drum3D(tabs, (tab) => {
+// The browser only opens a tab right after a pinch or trigger ("select");
+// a poke alone may not be enough, and then the next pinch opens it.
+let pending = null;
+function openFromXR(tab) {
+  if (!tab) return;
   tabs.activate(tab.id);
+  if (!tab.url) return drum.setHint('this card is empty: give it an address in window mode');
+  if (!openTab(tab)) {
+    pending = tab;
+    return drum.setHint('pinch to open ' + titleOf(tab));
+  }
+  pending = null;
+  tabs.markOpened(tab);
   renderer.xr.getSession()?.end();
-});
+}
+const drum = new Drum3D(tabs, openFromXR);
 scene.add(drum.group);
 tabs.addEventListener('change', () => drum.sync());
 
@@ -59,6 +72,14 @@ renderer.xr.addEventListener('sessionstart', () => {
   scene.background = xr.mode === 'immersive-ar' ? null : new THREE.Color(0x04050a);
   drum.rot = tabs.activeIndex;
   drum.vel = 0;
+  pending = null;
+  drum.setHint('pinch to open the front card');
+  // A hand pinch opens the front card; a controller trigger opens the card
+  // it clicks (handled by the drum), or one that was waiting for a pinch.
+  renderer.xr.getSession().addEventListener('select', (e) => {
+    if (e.inputSource.hand) openFromXR(pending || drum.front);
+    else if (pending) openFromXR(pending);
+  });
   needPlace = true;
 });
 renderer.xr.addEventListener('sessionend', () => {
@@ -82,6 +103,10 @@ renderer.setAnimationLoop((time, frame) => {
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
   drum.update(input.hands.filter((h) => h !== helpHand), dt);
+  if (pending && drum.front !== pending) {
+    pending = null; // flipped to another card
+    drum.setHint('pinch to open the front card');
+  }
   handsView.update(input.hands);
   renderer.render(scene, camera);
 });

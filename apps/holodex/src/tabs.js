@@ -1,15 +1,10 @@
-// Open tabs, shared by the 2D browser and the XR Rolodex, saved in
-// localStorage. A tab with an empty url shows the start page.
+// The cards on the Rolodex, shared by the 2D view and the XR Rolodex, saved
+// in localStorage. Each card is a real browser tab: opening it hands the
+// address to the browser (see launch.js), so every site works as usual.
+// A card with an empty url shows the start page.
 
 const KEY = 'vros.holodex.tabs';
 const SEARCH = 'https://duckduckgo.com/?q=';
-
-// Sites known to refuse being shown inside another page (X-Frame-Options /
-// frame-ancestors). They get an "open in window" card instead of a blank frame.
-const NO_FRAMING = [
-  'google.com', 'github.com', 'x.com', 'twitter.com', 'facebook.com', 'instagram.com',
-  'reddit.com', 'linkedin.com', 'amazon.com', 'netflix.com', 'chatgpt.com', 'claude.ai',
-];
 
 // Turn what was typed in the address bar into a URL: full URLs pass through,
 // things that look like a domain get https://, anything else is a search.
@@ -17,7 +12,7 @@ export function normalizeUrl(input) {
   const s = input.trim();
   if (!s) return '';
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(s)) return s;
-  if (!/\s/.test(s) && /^[^/]+\.[a-z]{2,}(:\d+)?(\/.*)?$/i.test(s)) return 'https://' + s;
+  if (!/\s/.test(s) && /^(localhost|[^/\s]+\.[a-z]{2,}|\d{1,3}(\.\d{1,3}){3})(:\d+)?([/?#].*)?$/i.test(s)) return 'https://' + s;
   return SEARCH + encodeURIComponent(s);
 }
 
@@ -25,44 +20,34 @@ export function hostOf(url) {
   try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return ''; }
 }
 
+// The card's label: what you named it, else the search or the site.
 export function titleOf(tab) {
-  if (!tab.url) return 'New tab';
-  if (tab.url.startsWith(SEARCH)) return '“' + decodeURIComponent(tab.url.slice(SEARCH.length)) + '”';
+  if (tab.title) return tab.title;
+  if (!tab.url) return 'New card';
+  if (tab.url.startsWith(SEARCH)) return '“' + decodeURIComponent(tab.url.slice(SEARCH.length).split('&')[0]).replace(/\+/g, ' ') + '”';
   return hostOf(tab.url) || tab.url;
 }
-
-// YouTube pages can't be framed but the embed player can.
-export function frameUrl(url) {
-  try {
-    const u = new URL(url);
-    const host = u.hostname.replace(/^(www|m)\./, '');
-    const id = host === 'youtu.be' ? u.pathname.slice(1) : host === 'youtube.com' && u.pathname === '/watch' ? u.searchParams.get('v') : null;
-    if (id) return `https://www.youtube.com/embed/${encodeURIComponent(id)}`;
-  } catch {}
-  return url;
-}
-
-export function framingBlocked(url) {
-  if (frameUrl(url) !== url) return false;
-  const host = hostOf(url);
-  return NO_FRAMING.some((d) => host === d || host.endsWith('.' + d));
-}
-
-let nextId = 1;
 
 export class Tabs extends EventTarget {
   constructor() {
     super();
     this.list = [];
     this.activeId = null;
+    this.nextId = 1;
     try {
       const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
       if (saved?.list?.length) {
-        this.list = saved.list.map((t) => ({ id: nextId++, url: t.url || '', back: [], fwd: [] }));
+        // Ids are kept: each one names the card's browser tab.
+        this.list = saved.list.map((t) => ({ id: t.id || this.nextId++, url: t.url || '', title: t.title || '', opened: t.opened || 0 }));
+        this.nextId = Math.max(saved.nextId || 1, ...this.list.map((t) => t.id + 1));
         this.activeId = this.list[Math.min(saved.active | 0, this.list.length - 1)].id;
       }
     } catch {}
-    if (!this.list.length) this.add('https://en.wikipedia.org/wiki/Rolodex', false);
+    if (!this.list.length) {
+      this.add('https://en.wikipedia.org/wiki/Rolodex', false);
+      this.add('https://www.youtube.com/', false);
+      this.activeId = this.list[0].id;
+    }
   }
 
   get active() {
@@ -74,7 +59,7 @@ export class Tabs extends EventTarget {
   }
 
   add(url = '', emit = true) {
-    const tab = { id: nextId++, url, back: [], fwd: [] };
+    const tab = { id: this.nextId++, url, title: '', opened: 0 };
     const at = this.activeId ? this.activeIndex + 1 : this.list.length;
     this.list.splice(at, 0, tab);
     this.activeId = tab.id;
@@ -86,7 +71,7 @@ export class Tabs extends EventTarget {
     const i = this.list.findIndex((t) => t.id === id);
     if (i < 0) return;
     this.list.splice(i, 1);
-    if (!this.list.length) this.list.push({ id: nextId++, url: '', back: [], fwd: [] });
+    if (!this.list.length) this.list.push({ id: this.nextId++, url: '', title: '', opened: 0 });
     if (this.activeId === id) this.activeId = this.list[Math.min(i, this.list.length - 1)].id;
     this._changed();
   }
@@ -97,34 +82,34 @@ export class Tabs extends EventTarget {
     this._changed();
   }
 
+  // Point the active card at a new address (its label follows the site).
   navigate(url) {
     const tab = this.active;
     if (url === tab.url) return;
-    if (tab.url) tab.back.push(tab.url);
-    tab.fwd.length = 0;
     tab.url = url;
+    tab.title = '';
     this._changed();
   }
 
-  back() {
-    const tab = this.active;
-    if (!tab.back.length) return;
-    tab.fwd.push(tab.url);
-    tab.url = tab.back.pop();
+  rename(id, title) {
+    const tab = this.list.find((t) => t.id === id);
+    if (!tab) return;
+    tab.title = title.trim();
     this._changed();
   }
 
-  forward() {
-    const tab = this.active;
-    if (!tab.fwd.length) return;
-    tab.back.push(tab.url);
-    tab.url = tab.fwd.pop();
+  markOpened(tab) {
+    tab.opened = Date.now();
     this._changed();
   }
 
   _changed() {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ list: this.list.map((t) => ({ url: t.url })), active: this.activeIndex }));
+      localStorage.setItem(KEY, JSON.stringify({
+        list: this.list.map(({ id, url, title, opened }) => ({ id, url, title, opened })),
+        active: this.activeIndex,
+        nextId: this.nextId,
+      }));
     } catch {}
     this.dispatchEvent(new Event('change'));
   }
