@@ -60,6 +60,15 @@ Voice commands: "new line", "delete that" (removes the selection), "undo" / "scr
 
 Speech recognition: on Quest, Scribe runs [Whisper](https://huggingface.co/Xenova/whisper-tiny.en) on the headset (English, about 40 MB downloaded once on first use). Elsewhere it uses the browser's built-in recognition when available and falls back to Whisper if that fails. `?engine=whisper` or `?engine=web` forces one; `?model=base` uses the larger, more accurate Whisper model.
 
+## Holodex
+
+A web browser whose tabs are index cards on a Rolodex.
+
+- **2D view** (the normal page): the Rolodex runs down the left. Scroll it, drag it or click a card to flip; the card at the front is the open tab, shown on the right. The address bar searches (DuckDuckGo) or opens an address; ‹ › ↻ go back, forward and reload; ↗ opens the tab in its own browser window. **＋ New card** opens a start page with quick links.
+- **XR**: the same tabs on a 3D Rolodex in front of you. Swipe up or down in the air just in front of the cards to spin it; poke the front card to open that tab, which leaves XR and shows it in the 2D view.
+
+Limits that come from the web platform, not the app: a page can't draw other websites inside an immersive XR view, so pages are always read in the 2D view; and many big sites (Google, GitHub, X, Reddit, …) refuse to be shown inside another page. Those tabs show an **Open in window** button instead. YouTube video links are switched to YouTube's embeddable player. Only addresses typed or picked in Holodex are tracked, so ‹ › don't follow links clicked inside a page.
+
 ## Run it on your Quest 3
 
 WebXR needs a secure origin (HTTPS or `localhost`).
@@ -110,4 +119,10 @@ apps/scribe/
   src/speech.js     speech recognition (built-in or Whisper) + voice activity gate
   src/whisper-worker.js  Whisper in a worker via transformers.js
   src/buttons.js    pokeable buttons under the page
+apps/holodex/
+  index.html        browser layout: Rolodex pane, address bar, page viewer
+  src/tabs.js       open tabs (saved), address → URL, framing rules
+  src/ui.js         2D Rolodex drum and page viewer
+  src/drum3d.js     the Rolodex in XR
+  src/main.js       wires the 2D view and XR together
 ```
