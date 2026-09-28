@@ -5,6 +5,7 @@ import { Input } from './input.js';
 import { HandsView } from './handsView.js';
 import { Launcher } from './launcher.js';
 import { TextSprite } from './text.js';
+import { CloseGesture } from './closeGesture.js';
 
 const params = new URLSearchParams(location.search);
 const isQuest = /OculusBrowser|Quest/i.test(navigator.userAgent);
@@ -48,6 +49,8 @@ grabLine.visible = false;
 scene.add(grabLine);
 
 const input = new Input(renderer, camera);
+const closeGesture = new CloseGesture(renderer);
+scene.add(closeGesture.group);
 
 // ---------- apps ----------
 let appIndex = 0;
@@ -202,6 +205,7 @@ renderer.setAnimationLoop((time, frame) => {
   const xrCam = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
   viewerRight.setFromMatrixColumn(xrCam.matrixWorld, 0);
   const menuHand = launcher.update(hands, dt, t, appIndex, viewerRight);
+  closeGesture.update(hands, dt, xrCam);
 
   // Two pinching hands grab the whole formation: move, scale, and turn it.
   const pinching = hands.filter((h) => h.pinch && h !== menuHand);

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Input } from '../../galaxies/src/input.js';
 import { HandsView } from '../../galaxies/src/handsView.js';
+import { CloseGesture } from '../../galaxies/src/closeGesture.js';
 import { Doc } from './doc.js';
 import { Page, PAGE_H } from './page.js';
 import { Speech } from './speech.js';
@@ -36,6 +37,8 @@ const handsView = new HandsView();
 scene.add(handsView.points);
 
 const input = new Input(renderer, camera);
+const closeGesture = new CloseGesture(renderer);
+scene.add(closeGesture.group);
 
 // ---------- speech ----------
 const status = document.getElementById('status');
@@ -251,6 +254,7 @@ renderer.setAnimationLoop((time, frame) => {
   }
 
   updateGestures(input.hands, dt);
+  closeGesture.update(input.hands, dt, renderer.xr.isPresenting ? renderer.xr.getCamera() : camera);
 
   const hint = doc.sel ? 'say the replacement · "delete that" removes it' : '';
   page.status = [speechStatus, hint].filter(Boolean).join('   ·   ');
