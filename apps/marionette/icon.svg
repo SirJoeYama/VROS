@@ -1,25 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <radialGradient id="bg" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="#2a1a3a"/><stop offset="1" stop-color="#05060d"/></radialGradient>
-    <radialGradient id="spot" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd9a0" stop-opacity=".35"/><stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/></radialGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <ellipse cx="256" cy="430" rx="150" ry="30" fill="url(#spot)"/>
-  <!-- control bar and strings -->
-  <path d="M150 70h212M256 50v40" stroke="#c9a06a" stroke-width="12" stroke-linecap="round"/>
-  <g stroke="#ffe3a8" stroke-width="3" opacity=".85">
-    <path d="M160 70L176 262M352 70L336 262M256 70v88M205 70L226 330M307 70L286 330"/>
+  <!-- ghost of the previous pose -->
+  <g opacity=".35" stroke="#ff6a6a" stroke-width="16" stroke-linecap="round" fill="none">
+    <path d="M226 190L196 250M258 190L300 236M232 272L222 340M252 272L270 338"/>
   </g>
-  <!-- puppet -->
-  <g stroke-linecap="round">
-    <path d="M232 214L176 262M280 214L336 262" stroke="#b8423a" stroke-width="18"/>
-    <path d="M240 290L226 330L226 400M272 290L286 330L286 400" stroke="#2f3e66" stroke-width="20"/>
+  <!-- the puppet, mid-step -->
+  <g stroke-linecap="round" fill="none">
+    <path d="M236 184L190 214L166 176" stroke="#b8423a" stroke-width="18"/>
+    <path d="M276 184L318 214L346 196" stroke="#b8423a" stroke-width="18"/>
+    <path d="M246 270L228 316L200 344M266 270L292 318L300 358" stroke="#2f3e66" stroke-width="20"/>
   </g>
-  <rect x="222" y="200" width="68" height="96" rx="14" fill="#b8423a"/>
-  <circle cx="256" cy="176" r="30" fill="#e8c39e"/>
-  <path d="M232 152L256 108L280 152z" fill="#3a5fb8"/>
-  <circle cx="246" cy="172" r="4" fill="#2b2118"/><circle cx="266" cy="172" r="4" fill="#2b2118"/>
-  <path d="M244 186q12 10 24 0" stroke="#7a3b2e" stroke-width="4" fill="none" stroke-linecap="round"/>
-  <circle cx="176" cy="264" r="11" fill="#e8c39e"/><circle cx="336" cy="264" r="11" fill="#e8c39e"/>
-  <ellipse cx="226" cy="404" rx="16" ry="9" fill="#2b2118"/><ellipse cx="286" cy="404" rx="16" ry="9" fill="#2b2118"/>
+  <rect x="228" y="176" width="58" height="96" rx="14" fill="#b8423a"/>
+  <circle cx="257" cy="150" r="27" fill="#e8c39e"/>
+  <path d="M235 128L257 88L279 128z" fill="#3a5fb8"/>
+  <!-- handles -->
+  <circle cx="190" cy="214" r="9" fill="#ffc36a"/><circle cx="318" cy="214" r="9" fill="#ffc36a"/>
+  <path d="M166 162l12 14-12 14-12-14z" fill="#7fe7ff"/><path d="M346 182l12 14-12 14-12-14z" fill="#7fe7ff"/>
+  <!-- film strip timeline -->
+  <rect x="60" y="398" width="392" height="62" rx="10" fill="#0e1122" stroke="#9fb8ff" stroke-opacity=".5" stroke-width="3"/>
+  <g fill="#cfc8b4"><rect x="78" y="410" width="52" height="38" rx="3"/><rect x="142" y="410" width="52" height="38" rx="3"/><rect x="270" y="410" width="52" height="38" rx="3"/><rect x="334" y="410" width="52" height="38" rx="3"/></g>
+  <rect x="206" y="410" width="52" height="38" rx="3" fill="#f3ead2" stroke="#9fb8ff" stroke-width="4"/>
 </svg>

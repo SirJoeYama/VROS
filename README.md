@@ -73,18 +73,21 @@ Limits that come from the web platform, not the app: a page can't draw other web
 
 ## Marionette
 
-A wooden puppet on a small stage in front of you, hanging on glowing strings from your fingertips. It's simulated with physics, so it swings, sways and slumps.
+Stop-motion animation in XR: pose a jointed puppet on a small stage, capture the pose as a frame, pose it again, and play the frames back.
 
-| Your hand | Pulls the puppet's |
+**Posing.** Pinch a handle and move it:
+
+| Handle | What it does |
 | --- | --- |
-| **Index fingers** | hands |
-| **Middle fingers** | head |
-| **Ring fingers** | knees (lift one, then the other, to walk) |
-| **Palms** | shoulders |
+| **Amber spheres** (chest, head, elbows, knees) | **Forward kinematics**: bend the bone behind the handle (spine, neck, upper arm, thigh) around its joint; everything further down the hierarchy follows. |
+| **Cyan diamonds** (hands, feet) | **Inverse kinematics**: put the hand or foot where you want it; the elbow or knee works out its own bend, in the plane it already bends in (or the natural way when the limb is straight). The hand/foot keeps its orientation. |
+| **White ring** (hips) | Moves the whole puppet. |
 
-Each hand works the strings on its own side as you look at the stage. Strings attach at whatever length they have when your hands appear, so picking the puppet up never jerks it; move your hands away (or make a fist) and they go slack. **Two fists, held a second** stand the puppet back up in front of you. Taut strings glow brighter.
+The skeleton is a hierarchy: hips → spine → chest → neck → head, chest → shoulders → elbows → hands, hips → hip joints → knees → feet. The **HANDS: IK / FK** button turns the hand and foot handles into FK handles too (they then rotate the forearm or shin). Both hands can hold handles at once.
 
-With controllers each one is half a control bar (trigger lifts a hand, grip lifts a knee). Desktop preview: the pointer is the control bar; hold the left button to wave, the right button to walk.
+**Timeline.** A film strip in front of the stage, poked with a finger: frame cells with stick-figure thumbnails (poke to jump), **PREV / PLAY / NEXT**, **+ FRAME** (copies the current pose into a new frame after it: the stop-motion step), **DELETE**, **ONION** (see-through ghosts of the previous frame in red and the next in blue) and **FPS** (4, 6, 8, 12 or 24). Playback shows each pose as is, with no in-betweens. The animation is saved in the browser.
+
+Desktop preview: drag handles with the mouse and click the timeline; keys ←/→ frames, space play, N new frame, Delete, O onion, K IK/FK, F fps.
 
 ## Run it on your Quest 3
 
@@ -143,6 +146,7 @@ apps/holodex/
   src/drum3d.js     the Rolodex in XR
   src/main.js       wires the 2D view and XR together
 apps/marionette/
-  src/puppet.js     the puppet: Verlet physics, strings, body, stage
-  src/main.js       fingertips / controllers / pointer → strings, XR
+  src/rig.js        the puppet's bone hierarchy, FK and two-bone IK, poses
+  src/timeline.js   frames, playback, the film-strip panel
+  src/main.js       stage, handles, pinch-dragging, onion skins, XR
 ```

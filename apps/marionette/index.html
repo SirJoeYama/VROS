@@ -16,21 +16,21 @@
   <div id="overlay">
     <a class="home" href="../../">← Home</a>
     <h1>MARIONETTE</h1>
-    <p class="sub">a puppet on strings from your fingertips</p>
+    <p class="sub">pose a puppet, frame by frame</p>
     <button id="enter" disabled>Checking WebXR…</button>
-    <div class="row"><button id="reset">Stand the puppet up</button></div>
+    <div class="row"><button id="reset">Reset this pose</button><button id="clear">New animation</button></div>
     <p id="status"></p>
     <dl class="legend">
-      <dt>Index fingers</dt><dd>the puppet's hands</dd>
-      <dt>Middle fingers</dt><dd>its head</dd>
-      <dt>Ring fingers</dt><dd>its knees: lift to walk</dd>
-      <dt>Palms</dt><dd>its shoulders</dd>
-      <dt>Hands away</dt><dd>strings go slack, the puppet slumps</dd>
-      <dt>Two fists (hold)</dt><dd>stand it back up in front of you</dd>
+      <dt>Pinch a handle, move</dt><dd>pose the puppet</dd>
+      <dt>Amber spheres (FK)</dt><dd>bend chest, head, upper arms, thighs; everything below follows</dd>
+      <dt>Cyan diamonds (IK)</dt><dd>place hands and feet; elbows and knees bend to follow</dd>
+      <dt>White ring</dt><dd>move the whole puppet</dd>
+      <dt>Poke the timeline</dt><dd>+ FRAME copies this pose into a new frame; pick frames, play, delete</dd>
+      <dt>Onion skin</dt><dd>ghosts of the previous (red) and next (blue) frames</dd>
       <dt>Palms together (hold)</dt><dd>close the app, back to home</dd>
       <dt>Palm toward your eyes (hold)</dt><dd>show or hide this help in XR</dd>
     </dl>
-    <p class="desk">Desktop preview: move the pointer = control bar · hold left button = wave · hold right button = walk. Controllers: trigger lifts a hand, grip lifts a knee.</p>
+    <p class="desk">Desktop: drag handles with the mouse · click the timeline · ←/→ frames · space play · N new frame · Del delete · O onion · K IK/FK · F fps</p>
   </div>
   <script type="module" src="src/main.js"></script>
 </body>
