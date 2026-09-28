@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import { ParticleField } from './particles.js';
 import { APPS } from './apps.js';
-import { Input } from './input.js';
-import { HandsView } from './handsView.js';
+import { Input } from '../../../shared/input.js';
+import { HandsView } from '../../../shared/handsView.js';
 import { Launcher } from './launcher.js';
 import { TextSprite } from './text.js';
-import { CloseGesture } from './closeGesture.js';
-import { HelpGesture } from './helpGesture.js';
+import { CloseGesture } from '../../../shared/closeGesture.js';
+import { HelpGesture } from '../../../shared/helpGesture.js';
+import { setupEnterXR } from '../../../shared/xr.js';
 
 const params = new URLSearchParams(location.search);
 const isQuest = /OculusBrowser|Quest/i.test(navigator.userAgent);
@@ -93,48 +94,18 @@ function boot() {
 boot();
 
 // ---------- XR session ----------
-const enterBtn = document.getElementById('enter');
 const status = document.getElementById('status');
-let sessionMode = null;
 let needRecenter = false;
-
-async function detectXR() {
-  if (!navigator.xr) {
-    status.textContent = 'WebXR unavailable. Open this page in the Meta Quest Browser.';
-    enterBtn.textContent = 'XR not available';
-    return;
-  }
-  for (const mode of ['immersive-ar', 'immersive-vr']) {
-    if (await navigator.xr.isSessionSupported(mode).catch(() => false)) {
-      sessionMode = mode;
-      break;
-    }
-  }
-  if (!sessionMode) {
-    status.textContent = 'No immersive session available. Desktop preview only.';
-    enterBtn.textContent = 'XR not available';
-    return;
-  }
-  enterBtn.disabled = false;
-  enterBtn.textContent = sessionMode === 'immersive-ar' ? 'Enter (passthrough)' : 'Enter VR';
-}
-detectXR();
-
-enterBtn.addEventListener('click', async () => {
-  try {
-    const session = await navigator.xr.requestSession(sessionMode, {
-      requiredFeatures: ['local-floor'],
-      optionalFeatures: ['hand-tracking', 'bounded-floor'],
-    });
-    await renderer.xr.setSession(session);
-  } catch (err) {
-    status.textContent = 'Could not start XR: ' + err.message;
-  }
+const xr = setupEnterXR({
+  renderer,
+  button: document.getElementById('enter'),
+  status,
+  optionalFeatures: ['hand-tracking', 'bounded-floor'],
 });
 
 renderer.xr.addEventListener('sessionstart', () => {
   document.body.classList.add('in-xr');
-  scene.background = sessionMode === 'immersive-ar' ? null : BG;
+  scene.background = xr.mode === 'immersive-ar' ? null : BG;
   field.material.uniforms.uScale.value = 1000;
   handsView.points.material.uniforms.uScale.value = 1000;
   needRecenter = true;

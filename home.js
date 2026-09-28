@@ -1,3 +1,5 @@
+import { startHomeXR } from './homeXR.js';
+
 // The start screen. Each app lives in its own folder under apps/ with an
 // index.html and an icon.svg; add an entry here to put it on the home screen.
 const APPS = [
@@ -22,3 +24,6 @@ function tick() {
 }
 tick();
 setInterval(tick, 10000);
+
+// The same icons in XR, as a shelf you poke.
+startHomeXR(APPS, document.getElementById('enter'));

@@ -6,7 +6,8 @@ const FACING = -0.6; // palm normals must point at each other (dot product)
 const RING_R = 0.045, SEGMENTS = 64;
 
 // Press both palms together (prayer pose) and hold to close the app and go
-// back to the home screen. A ring between the hands fills up while you hold.
+// back to the home screen (or, on the home screen, to leave XR). A ring
+// between the hands fills up while you hold.
 // Brief tracking dropouts (common when hands touch) drain the hold slowly
 // instead of resetting it.
 export class CloseGesture {
@@ -56,12 +57,19 @@ export class CloseGesture {
     if (p >= 1) this.close();
   }
 
+  // Navigate while the XR session is still running, so the home screen can
+  // pick it up (WebXR navigation) and you stay in the headset. With no
+  // homeUrl (on the home screen itself) this just leaves XR.
   close() {
     this.closing = true;
     this.ring.visible = false;
-    const go = () => location.assign(this.homeUrl);
+    if (this.homeUrl) {
+      location.assign(this.homeUrl);
+      return;
+    }
     const session = this.renderer.xr.getSession();
-    if (session) session.end().then(go, go);
-    else go();
+    const reset = () => { this.closing = false; this.hold = 0; };
+    if (session) session.end().then(reset, reset);
+    else reset();
   }
 }

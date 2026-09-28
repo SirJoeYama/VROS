@@ -8,6 +8,10 @@ It runs as a WebXR page in the Quest Browser, with passthrough when it's availab
 
 Opening the site shows a start screen with an icon for each app. Tap one to launch it; each app has a **← Home** link to come back.
 
+**In XR:** tap **Enter** on the start screen and the app icons float in an arc in front of you, with the time above. Poke an icon with your index finger to open it (with controllers, pull the trigger on it). Palms together on the home screen leaves XR.
+
+Moving between the home screen and apps keeps you in the headset when the browser supports WebXR navigation (Quest Browser does): the next page re-enters XR on its own. Otherwise you land on the page and tap **Enter** again.
+
 **Close an app:** press both palms together in front of you (prayer pose) and hold for about a second. A ring fills up between your hands; when it closes, the app exits and you're back on the home screen. Works in every app.
 
 **Help in XR:** hold an open hand up near eye height with the palm facing your eyes (like reading a note in your hand) for half a second. A card with the app's gestures appears in front of you; do it again to hide it. A short tip about this shows when you enter XR. The card lists the same gestures as the app's page overlay (`<dl class="legend">`), so there is one list to keep up to date.
@@ -81,18 +85,22 @@ Then open `http://localhost:3000` in the Quest Browser.
 
 ```
 index.html, home.js, home.css   start screen (app icons)
+homeXR.js           the start screen in XR: icon shelf you poke
+shared/             used by the home screen and every app
+  xr.js             Enter button, passthrough/VR choice, re-entering XR after navigation
+  input.js          hands / controllers / mouse → unified gesture state
+  handsView.js      glowing joint visualization
+  pointsMaterial.js glowing point shader
+  closeGesture.js   palms together → close the app (home: leave XR)
+  helpGesture.js    palm toward your eyes → help card
 apps/galaxies/
   index.html        overlay + import map (three.js from jsDelivr, no build step)
   icon.svg          home screen icon
   src/main.js       renderer, XR session, gesture → force mapping, main loop
-  src/input.js      hands / controllers / mouse → unified gesture state
-  src/particles.js  CPU particle simulation + glow point shader
+  src/particles.js  CPU particle simulation
   src/apps.js       particle formations
   src/launcher.js   palm-up formation dock
-  src/handsView.js  glowing joint visualization
   src/text.js       canvas text sprites
-  src/closeGesture.js  palms-together gesture to close an app (shared)
-  src/helpGesture.js   palm-toward-eyes gesture to show help in XR (shared)
 apps/scribe/
   index.html        overlay + import map
   icon.svg          home screen icon
@@ -103,5 +111,3 @@ apps/scribe/
   src/whisper-worker.js  Whisper in a worker via transformers.js
   src/buttons.js    pokeable buttons under the page
 ```
-
-Scribe reuses the hand tracking, close and help gestures from Galaxies (`apps/galaxies/src/input.js`, `handsView.js`, `closeGesture.js`, `helpGesture.js`).
