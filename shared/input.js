@@ -26,6 +26,7 @@ function makeState(id) {
     joints: new Float32Array(JOINTS.length * 3),
     jointCount: 0,
     pinch: false,
+    pressure: 1, // how hard: a controller's analog trigger, 1 for hands and the mouse
     open: false,
     fist: false,
     palmUp: false,
@@ -157,6 +158,7 @@ export class Input {
         }
         if (!ok) continue;
         st.kind = 'hand';
+        st.pressure = 1;
         st.jointCount = JOINTS.length;
         analyzeHand(st);
         trackVelocity(st, st.palmCenter, dt);
@@ -175,6 +177,7 @@ export class Input {
         const b = src.gamepad ? src.gamepad.buttons : [];
         const pressed = (i) => !!(b[i] && (b[i].pressed || b[i].value > 0.5));
         st.pinch = pressed(0);
+        st.pressure = b[0] ? Math.max(0.15, b[0].value) : 1;
         st.open = pressed(1) && !st.pinch;
         st.fist = false;
         st.palmUp = false;

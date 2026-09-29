@@ -14,6 +14,8 @@ Moving between the home screen and apps keeps you in the headset when the browse
 
 **Close an app:** press both palms together in front of you (prayer pose) and hold for about a second. A ring fills up between your hands; when it closes, the app exits and you're back on the home screen. Works in every app.
 
+**Undo and redo, everywhere:** make a peace sign (index and middle fingers up in a V, the others curled) and hold it for a second. With the **left hand** it undoes, with the **right hand** it redoes; keep holding and it steps again about every half second. A ring fills around your hand while you hold, and a label says what happened ("Undo", "Nothing to undo", …). Plume undoes strokes, erasing and frame and layer changes; Scribe undoes text; Marionette and Rigger's Pose step undo poses and frame changes; Rigger's Fit step undoes skeleton edits. The other apps have nothing to undo and just say so.
+
 **Help in XR:** hold an open hand up near eye height with the palm facing your eyes (like reading a note in your hand) for half a second. A card with the app's gestures appears in front of you; do it again to hide it. A short tip about this shows when you enter XR. The card lists the same gestures as the app's page overlay (`<dl class="legend">`), so there is one list to keep up to date.
 
 To add an app, create `apps/<id>/` with an `index.html` and an `icon.svg`, then add an entry to the `APPS` list in `home.js`.
@@ -90,7 +92,7 @@ Stop-motion animation in XR: pose a jointed puppet on a small stage, capture the
 
 The skeleton is a hierarchy: hips → spine → chest → neck → head, chest → shoulders → elbows → hands, hips → hip joints → knees → feet. Both hands can hold handles at once.
 
-**Timeline.** A film strip in front of the stage, poked with a finger: frame cells with stick-figure thumbnails (poke to jump), **PREV / PLAY / NEXT**, **+ FRAME** (copies the current pose into a new frame after it: the stop-motion step), **DELETE**, **HANDS** / **FEET** (IK or FK for the tips), **ONION** (see-through ghosts of the previous frame in red and the next in blue) and **FPS** (4, 6, 8, 12 or 24). Playback shows each pose as is, with no in-betweens. The animation is saved in the browser.
+**Timeline.** A film strip in front of the stage, poked with a finger. Pinch the bar under it to carry it somewhere else, or pinch its bottom-right corner and pull to resize it; once moved it stays put until you recenter. On it: frame cells with stick-figure thumbnails (poke to jump), **PREV / PLAY / NEXT**, **+ FRAME** (copies the current pose into a new frame after it: the stop-motion step), **DELETE**, **HANDS** / **FEET** (IK or FK for the tips), **ONION** (see-through ghosts of the previous frame in red and the next in blue) and **FPS** (4, 6, 8, 12 or 24). Playback shows each pose as is, with no in-betweens. The animation is saved in the browser.
 
 Desktop preview: drag handles with the mouse, scale the scene with the wheel, click the timeline; keys ←/→ frames, space play, N new frame, Delete, O onion, H / J hands / feet IK⇄FK, F fps.
 
@@ -153,9 +155,28 @@ A panel floats in front of you with five steps; poke them in order:
 
    The film strip shows every frame (poke one to go there). **+ Frame** copies this pose into a new frame after it; **Prev / Play / Next**, **Delete**, **Onion skin** (skeletons of the previous frame in red and the next in blue), **FPS** (4 to 30), **Smooth / Stepped** (in-betweens on playback, or stop-motion), **Clip pose** (copy the pose of the clip last played in 4 Animate, to start from it), **Reset pose**, **New animation** (press twice). Fist + twist steps through the frames. **Save as clip** adds the frames as "My animation N" to the top of 4 Animate, ticked for export. The frames are saved in the browser for each skeleton type.
 
-Pinch empty space with both hands to move, scale and turn the model; two fists held for a second bring the model and panel back in front of you. Desktop preview: click the panel, drag joints and handles, right-drag to turn the model, wheel to scale; keys are listed on the page.
+Pinch the bar under the panel to carry it somewhere else, or pinch its bottom-right corner and pull to resize it; it stays where you put it. Pinch empty space with both hands to move, scale and turn the model; two fists held for a second (or **Recenter**) bring the model and panel back in front of you. Desktop preview: click the panel, drag joints and handles, right-drag to turn the model, wheel to scale; keys are listed on the page.
 
 The skeletons, sample models and animations are Mesh2Motion's (CC0), in `apps/rigger/assets/`; the skinning is a port of its solver (MIT).
+
+## Plume
+
+Paint in the air and animate it frame by frame, in the spirit of VR painting and animation tools like Quill.
+
+| Gesture | Effect |
+| --- | --- |
+| **Pinch and move** | Paint. With **Erase** on, pinch and sweep through strokes to remove them (one sweep is one undo). |
+| **Pinch with both hands** | Move, scale and turn the whole drawing: pull it close and zoom in to paint fine detail, or step back to see it all. Strokes are as wide as the brush in the room, so painting zoomed in gives finer lines. |
+| **Fist + twist** | Brush size, like a knob. |
+| **Poke the panel** | Everything else (below). |
+
+**Brushes:** **Ribbon**, a flat band that lies the way your hand is turned (like a calligraphy pen); **Tube**, round; **Glow**, round, see-through and additive. With controllers, the trigger is pressure: press harder for a wider line.
+
+**The panel:** Draw / Erase, the brushes, Undo / Redo; a colour square, hue bar and 16 swatches; the size slider; **Layers** (up to six: poke one to draw on it, ◉ to show or hide it, + / − Layer); the active layer's **frames** (poke one to go there); ◀ Prev, ▶ Play, Next ▶, **+ Frame** (blank), **Duplicate** (a copy to change a little), **Delete**, **Onion** (the previous frame in red and the next in blue), **FPS**; **New drawing** (press twice), **Recenter**, **Export GLB**. Pinch the bar under the panel to carry it, or its corner to resize it; two fists held a second bring it back.
+
+**Animation:** every layer has its own frames, and the playhead shows frame *t* mod the layer's length. A one-frame layer is a still background while the others animate, and layers of different lengths loop on their own. **Export GLB** saves the drawing with a node per frame and one stepped animation that switches them; viewers without animation show frame 1. The drawing is saved in the browser (IndexedDB) as you go.
+
+Desktop preview: drag to paint on a plane through the drawing's origin, click the panel, right-drag to turn the drawing, wheel to scale it; keys are listed on the page.
 
 ## Run it on your Quest 3
 
@@ -185,13 +206,15 @@ index.html, home.js, home.css   start screen (app icons)
 homeXR.js           the start screen in XR: icon shelf you poke
 shared/             used by the home screen and every app
   xr.js             Enter button, passthrough/VR choice, re-entering XR after navigation
-  input.js          hands / controllers / mouse → unified gesture state
+  input.js          hands / controllers / mouse → unified gesture state (and trigger pressure)
   handsView.js      glowing joint visualization
   pointsMaterial.js glowing point shader
   closeGesture.js   palms together → close the app (home: leave XR)
   fistTwist.js      fist + twist as a knob (Scribe scrolling, Cinema scrubbing)
-  sceneGrab.js      two-hand pinch → move / scale / turn (Marionette, Cinema, Pip)
+  sceneGrab.js      two-hand pinch → move / scale / turn (Marionette, Cinema, Pip, Rigger)
+  panelGrab.js      grab bar and corner grip to move / resize a floating panel (Marionette, Rigger)
   helpGesture.js    palm toward your eyes → help card
+  undoGesture.js    peace sign held 1 s → undo (left hand) / redo (right hand)
   speech.js         speech recognition (built-in or Whisper) + voice activity gate (Scribe, Pip)
   whisper-worker.js Whisper in a worker via transformers.js
 apps/galaxies/
@@ -241,4 +264,11 @@ apps/rigger/
   src/pose.js       posing (FK, two-bone IK, planted hips), frames, onion skin, clips
   src/panel.js      the pokeable panel: steps, items, film strip, actions
   src/main.js       steps, gestures, mouse, XR
+apps/plume/
+  src/brush.js      stroke geometry (ribbon, tube, glow), merging strokes into meshes
+  src/doc.js        layers, frames, strokes, undo / redo, saving (IndexedDB)
+  src/view.js       showing the frames at the playhead, onion skin, the stroke being drawn
+  src/panel.js      the pokeable panel: tools, colour, size, layers, frames, playback
+  src/export.js     GLB with one node per frame and a stepped animation
+  src/main.js       painting, erasing, grabbing the drawing, mouse, XR
 ```

@@ -16,6 +16,8 @@ export class Timeline extends EventTarget {
     this.modes = { hand: 'ik', foot: 'ik' }; // IK or FK for the hand and foot tips
     this.version = 0; // bumps on any change the panel shows
     this._clock = 0;
+    this.past = []; // { frames, current } before each pose or frame change, for undo
+    this.future = [];
     try {
       const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
       if (saved?.frames?.length) {
@@ -30,8 +32,36 @@ export class Timeline extends EventTarget {
     return this.frames[this.current];
   }
 
+  // Snapshot before a change, so it can be undone.
+  _record() {
+    this.past.push({ frames: structuredClone(this.frames), current: this.current });
+    if (this.past.length > 100) this.past.shift();
+    this.future.length = 0;
+  }
+
+  // Both return true if they changed something.
+  undo() {
+    return this._swap(this.past, this.future);
+  }
+
+  redo() {
+    return this._swap(this.future, this.past);
+  }
+
+  _swap(from, to) {
+    const s = from.pop();
+    if (!s) return false;
+    to.push({ frames: structuredClone(this.frames), current: this.current });
+    this.frames = s.frames;
+    this.current = Math.min(s.current, this.frames.length - 1);
+    this.pause();
+    this._changed(true);
+    return true;
+  }
+
   // The pose being edited changed.
   setPose(pose) {
+    this._record();
     this.frames[this.current] = pose;
     this._changed(false);
   }
@@ -46,6 +76,7 @@ export class Timeline extends EventTarget {
 
   // Stop-motion step: copy the current pose into a new frame right after it.
   addFrame() {
+    this._record();
     this.frames.splice(this.current + 1, 0, structuredClone(this.pose));
     this.current++;
     this._changed(true);
@@ -53,12 +84,14 @@ export class Timeline extends EventTarget {
 
   deleteFrame() {
     if (this.frames.length === 1) return;
+    this._record();
     this.frames.splice(this.current, 1);
     this.current = Math.min(this.current, this.frames.length - 1);
     this._changed(true);
   }
 
   clear(restPose) {
+    this._record();
     this.frames = [restPose];
     this.current = 0;
     this.playing = false;

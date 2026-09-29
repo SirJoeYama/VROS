@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Input } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
+import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { FistTwist } from '../../../shared/fistTwist.js';
@@ -42,6 +43,12 @@ scene.add(handsView.points);
 const input = new Input(renderer, camera);
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
+// Peace sign held a second: left hand undo, right hand redo.
+const undoGesture = new UndoGesture({
+  undo: () => doc.undo() && 'Undo',
+  redo: () => doc.redo() && 'Redo',
+});
+scene.add(undoGesture.group);
 const help = HelpGesture.fromPage();
 scene.add(help.group);
 
@@ -256,6 +263,7 @@ renderer.setAnimationLoop((time, frame) => {
   updateGestures(input.hands, dt);
   const viewer = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
   closeGesture.update(input.hands, dt, viewer);
+  undoGesture.update(input.hands, dt, viewer);
   help.update(input.hands, dt, viewer);
 
   const hint = doc.sel ? 'say the replacement · "delete that" removes it' : '';

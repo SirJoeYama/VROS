@@ -2,9 +2,11 @@ import * as THREE from 'three';
 import { Input } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
+import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { FistTwist } from '../../../shared/fistTwist.js';
 import { SceneGrab } from '../../../shared/sceneGrab.js';
+import { PanelGrab } from '../../../shared/panelGrab.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { RIGS, rigUrl, modelUrl } from './rigs.js';
 import { loadModel, loadGLTF } from './model.js';
@@ -57,12 +59,21 @@ const panel = new Panel();
 const desk = new THREE.Group();
 desk.add(panel.mesh);
 scene.add(desk);
+// Pinch the bar under the panel to carry it, or its corner to resize it. A
+// panel you've placed stays there until you recenter.
+const panelGrab = new PanelGrab(desk, panel.mesh, PANEL_W, PANEL_H);
 
 const handsView = new HandsView();
 scene.add(handsView.points);
 const input = new Input(renderer, camera);
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
+// Peace sign held a second: left hand undo, right hand redo.
+const undoGesture = new UndoGesture({
+  undo: () => historyStep('undo'),
+  redo: () => historyStep('redo'),
+});
+scene.add(undoGesture.group);
 const help = HelpGesture.fromPage();
 scene.add(help.group);
 const twist = new FistTwist();
@@ -395,7 +406,7 @@ async function press(id) {
       modelGroup.rotation.y -= Math.PI / 2;
       S.version++;
     },
-    recenter: () => (needPlace = true),
+    recenter: () => recenter(),
     pause: () => S.rigged?.togglePause(),
     weights: () => S.rigged?.setWeightsView(!S.rigged.showWeights),
     all: () => {
@@ -406,6 +417,16 @@ async function press(id) {
     export: () => S.rigged && exportGLB(),
   };
   edits[id]?.();
+}
+
+// Undo / redo for the step you're in: the skeleton fit or the pose frames.
+function historyStep(kind) {
+  if (S.step === 'fit' && S.editRig?.[kind]()) {
+    S.version++;
+    return kind === 'undo' ? 'Undo: skeleton' : 'Redo: skeleton';
+  }
+  if (S.step === 'pose' && S.poser?.[kind]()) return kind === 'undo' ? 'Undo: pose' : 'Redo: pose';
+  return null;
 }
 
 function posePress(id) {
@@ -462,7 +483,8 @@ $('export').addEventListener('click', () => {
 });
 addEventListener('keydown', (e) => {
   if (e.target.closest?.('input, textarea')) return;
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') press('undo');
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') historyStep(e.shiftKey ? 'redo' : 'undo');
+  else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') historyStep('redo');
   else if (S.step === 'pose') {
     const map = { ArrowLeft: 'p:prev', ArrowRight: 'p:next', ' ': 'p:play', n: 'p:add', Delete: 'p:delete', o: 'p:onion', h: 'p:hands', j: 'p:feet', f: 'p:fps', s: 'p:smooth' };
     if (map[e.key]) { e.preventDefault(); press(map[e.key]); }
@@ -489,6 +511,7 @@ function placeDesktop() {
   stage.position.set(0.3, 1.36 - cy * S.baseScale, -1);
   stage.updateMatrixWorld(true);
   desk.position.set(0.24, 0.93, -0.18);
+  desk.scale.setScalar(1);
   camera.position.set(0, 1.3, 1.05);
   camera.lookAt(0.05, 1.06, -0.6);
   desk.lookAt(camera.position);
@@ -513,11 +536,19 @@ function placeXR(frame) {
   stage.position.y = eye.y - 0.22 - ((box.min.y + box.max.y) / 2) * k;
   stage.lookAt(eye.x, stage.position.y, eye.z);
   stage.updateMatrixWorld(true);
-  desk.position.copy(eye).addScaledVector(fwd, 0.42);
-  desk.position.y = eye.y - 0.42;
-  desk.lookAt(eye);
-  desk.updateMatrixWorld(true);
+  if (!panelGrab.moved) {
+    desk.position.copy(eye).addScaledVector(fwd, 0.42);
+    desk.position.y = eye.y - 0.42;
+    desk.lookAt(eye);
+    desk.updateMatrixWorld(true);
+  }
   return true;
+}
+
+// Model and panel back in front of you, wherever you'd put the panel.
+function recenter() {
+  panelGrab.moved = false;
+  needPlace = true;
 }
 
 // ---------- grabbing handles ----------
@@ -563,7 +594,9 @@ let twistAcc = 0, twistHand = null;
 let fistsHeld = 0;
 
 function panelLocal(point) {
-  return panel.mesh.worldToLocal(local.copy(point));
+  panel.mesh.worldToLocal(local.copy(point));
+  local.z *= desk.scale.x; // press depth in meters, whatever the panel's size
+  return local;
 }
 const insidePanel = (l) => Math.abs(l.x) < PANEL_W / 2 && Math.abs(l.y) < PANEL_H / 2;
 
@@ -664,7 +697,7 @@ function updateFists(hands, dt) {
   fistsHeld = fists.length === 2 ? fistsHeld + dt : 0;
   if (fistsHeld > 1) {
     fistsHeld = -1e9; // once per hold
-    needPlace = true;
+    recenter();
   }
   if (fists.length !== 1) {
     twistHand = null;
@@ -762,12 +795,14 @@ renderer.xr.addEventListener('sessionstart', () => {
   document.body.classList.add('in-xr');
   scene.background = xr.mode === 'immersive-ar' ? null : BG;
   handsView.points.material.uniforms.uScale.value = 1000;
-  needPlace = true;
+  panelGrab.visible = true;
+  recenter();
 });
 renderer.xr.addEventListener('sessionend', () => {
   document.body.classList.remove('in-xr');
   scene.background = BG;
   help.hide();
+  panelGrab.visible = false;
   placeDesktop();
   onResize();
 });
@@ -797,12 +832,14 @@ renderer.setAnimationLoop((time, frame) => {
   }
   stage.getWorldPosition(center);
   input.update(frame, dt, center);
-  for (const ev of input.events) if (ev === 'recenter') needPlace = true;
+  for (const ev of input.events) if (ev === 'recenter') recenter();
 
   const viewer = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
-  const hands = input.hands.filter((h) => h !== helpHand);
+  const peace = undoGesture.update(input.hands, dt, viewer);
+  const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
+  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && !carrying.has(h.id));
   updateHands(hands, dt, now);
   wheelZoom();
   S.rigged?.tick(dt);

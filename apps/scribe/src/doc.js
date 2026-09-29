@@ -27,6 +27,7 @@ export class Doc {
     this.sel = null; // { start, end } character range
     this.interim = '';
     this.history = [];
+    this.future = []; // undone texts, for redo
     this.version = 0; // bumps on any visible change
     this.textVersion = 0; // bumps when the text itself changes
   }
@@ -60,6 +61,7 @@ export class Doc {
     if (!said) return;
     const cmd = said.toLowerCase().replace(/[.!?,]/g, '').trim();
     if (cmd === 'undo' || cmd === 'scratch that') return this.undo();
+    if (cmd === 'redo') return this.redo();
     if (cmd === 'new line' || cmd === 'new paragraph') return this.write('\n');
     if (this.sel && (cmd === 'delete' || cmd === 'delete that')) return this.write('');
     this.write(said);
@@ -88,17 +90,30 @@ export class Doc {
 
     this.history.push(this.text);
     if (this.history.length > 100) this.history.shift();
+    this.future.length = 0;
     this.text = before + str + after;
     this.sel = null;
     this.interim = '';
     this._changed();
   }
 
+  // Both return true if they changed something.
   undo() {
-    if (!this.history.length) return;
+    if (!this.history.length) return false;
+    this.future.push(this.text);
     this.text = this.history.pop();
     this.sel = null;
     this._changed();
+    return true;
+  }
+
+  redo() {
+    if (!this.future.length) return false;
+    this.history.push(this.text);
+    this.text = this.future.pop();
+    this.sel = null;
+    this._changed();
+    return true;
   }
 
   // A replacement keeps the case and trailing punctuation of the words it replaces.
