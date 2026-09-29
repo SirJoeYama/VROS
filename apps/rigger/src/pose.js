@@ -115,8 +115,38 @@ export class Poser {
   }
 
   commit() {
+    this._record();
     this.frames[this.current] = this.getPose();
     this._changed();
+  }
+
+  // ---------- undo ----------
+  // A snapshot of the frames before each change.
+  _record() {
+    this.past.push({ frames: structuredClone(this.frames), current: this.current });
+    if (this.past.length > 100) this.past.shift();
+    this.future.length = 0;
+  }
+
+  // Both return true if they changed something.
+  undo() {
+    return this._swap(this.past, this.future);
+  }
+
+  redo() {
+    return this._swap(this.future, this.past);
+  }
+
+  _swap(from, to) {
+    const s = from.pop();
+    if (!s) return false;
+    this.stop();
+    to.push({ frames: structuredClone(this.frames), current: this.current });
+    this.frames = s.frames;
+    this.current = Math.min(s.current, this.frames.length - 1);
+    this.setPose(this.pose);
+    this._changed();
+    return true;
   }
 
   show() {
@@ -135,6 +165,7 @@ export class Poser {
 
   addFrame() {
     this.stop();
+    this._record();
     this.frames.splice(this.current + 1, 0, structuredClone(this.pose));
     this.current++;
     this._changed();
@@ -143,6 +174,7 @@ export class Poser {
   deleteFrame() {
     if (this.frames.length === 1) return;
     this.stop();
+    this._record();
     this.frames.splice(this.current, 1);
     this.current = Math.min(this.current, this.frames.length - 1);
     this.setPose(this.pose);
@@ -151,6 +183,7 @@ export class Poser {
 
   clear() {
     this.stop();
+    this._record();
     this.frames = [this.restPose()];
     this.current = 0;
     this.setPose(this.pose);
@@ -166,6 +199,7 @@ export class Poser {
   // Copy a library clip's pose at time `t` into this frame.
   useClipPose(clip, t) {
     this.stop();
+    this._record();
     this.rigged.sample(clip, t, () => (this.frames[this.current] = this.getPose()));
     this.setPose(this.pose);
     this._changed();
@@ -472,6 +506,8 @@ export class Poser {
     this.modes = { hand: 'ik', foot: 'ik' };
     this.playing = false;
     this.version = 0;
+    this.past = [];
+    this.future = [];
     try {
       const s = JSON.parse(localStorage.getItem(this.key) || 'null');
       if (s?.frames?.length) Object.assign(this, { frames: s.frames, fps: s.fps || 8, smooth: s.smooth ?? true });

@@ -6,6 +6,7 @@ import { HandsView } from '../../../shared/handsView.js';
 import { Launcher } from './launcher.js';
 import { TextSprite } from './text.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
+import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 
@@ -53,6 +54,9 @@ scene.add(grabLine);
 const input = new Input(renderer, camera);
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
+// Peace sign held a second: undo / redo (nothing to undo here, it just says so).
+const undoGesture = new UndoGesture();
+scene.add(undoGesture.group);
 const help = HelpGesture.fromPage();
 scene.add(help.group);
 
@@ -184,6 +188,7 @@ renderer.setAnimationLoop((time, frame) => {
   viewerRight.setFromMatrixColumn(xrCam.matrixWorld, 0);
   const menuHand = launcher.update(hands, dt, t, appIndex, viewerRight);
   closeGesture.update(hands, dt, xrCam);
+  undoGesture.update(hands, dt, xrCam);
   const helpHand = help.update(hands, dt, xrCam);
 
   // Two pinching hands grab the whole formation: move, scale, and turn it.

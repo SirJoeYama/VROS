@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Input } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
+import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { SceneGrab } from '../../../shared/sceneGrab.js';
@@ -323,6 +324,9 @@ scene.add(handsView.points);
 const input = new Input(renderer, camera);
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
+// Peace sign held a second: undo / redo (nothing to undo here, it just says so).
+const undoGesture = new UndoGesture();
+scene.add(undoGesture.group);
 const help = HelpGesture.fromPage();
 scene.add(help.group);
 
@@ -464,6 +468,7 @@ renderer.setAnimationLoop((time, frame) => {
   const viewer = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
+  undoGesture.update(input.hands, dt, viewer);
   updateGestures(input.hands.filter((h) => h !== helpHand));
   updatePhase();
   if (phase === 'listening' && speechStatus && !heard && !bubble.answer) bubble.set({ status: speechStatus === 'listening' ? 'listening…' : speechStatus });

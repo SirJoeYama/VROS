@@ -2,11 +2,13 @@ import * as THREE from 'three';
 import { Input } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
+import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { Rig, HANDLES } from './rig.js';
-import { Timeline, TimelinePanel, PANEL_H } from './timeline.js';
+import { Timeline, TimelinePanel, PANEL_W, PANEL_H } from './timeline.js';
 import { SceneGrab } from '../../../shared/sceneGrab.js';
+import { PanelGrab } from '../../../shared/panelGrab.js';
 
 const BG = new THREE.Color(0x04050a);
 const GRAB_RADIUS = 0.035; // how close a pinch must be to a handle
@@ -53,7 +55,16 @@ const desk = new THREE.Group();
 panel.mesh.rotation.x = -0.75; // tilted up toward your eyes
 desk.add(panel.mesh);
 scene.add(desk);
+// Pinch the bar under the timeline to carry it somewhere else, or its corner
+// to resize it. Once carried it stays put, until you recenter.
+const panelGrab = new PanelGrab(panel.mesh, panel.mesh, PANEL_W, PANEL_H, { detach: scene });
+function dockPanel() {
+  if (panel.mesh.parent === desk) return;
+  desk.add(panel.mesh);
+  panel.mesh.rotation.set(-0.75, 0, 0);
+}
 function placeDesk() {
+  if (panel.mesh.parent !== desk) return;
   const k = stage.scale.x;
   desk.position.copy(stage.position);
   desk.quaternion.copy(stage.quaternion);
@@ -96,6 +107,12 @@ scene.add(handsView.points);
 const input = new Input(renderer, camera);
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
+// Peace sign held a second: left hand undo, right hand redo.
+const undoGesture = new UndoGesture({
+  undo: () => timeline.undo() && 'Undo',
+  redo: () => timeline.redo() && 'Redo',
+});
+scene.add(undoGesture.group);
 const help = HelpGesture.fromPage();
 scene.add(help.group);
 
@@ -120,6 +137,7 @@ function placeXR(frame) {
   fwd.y = 0;
   if (fwd.lengthSq() < 1e-4) fwd.set(0, 0, -1);
   fwd.normalize();
+  dockPanel();
   stage.position.set(p.x + fwd.x * 0.5, p.y - 0.55, p.z + fwd.z * 0.5);
   stage.lookAt(p.x, stage.position.y, p.z);
   stage.updateMatrixWorld(true);
@@ -146,6 +164,8 @@ function press(region) {
 
 addEventListener('keydown', (e) => {
   if (e.target.closest('input, textarea')) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') return e.shiftKey ? timeline.redo() : timeline.undo();
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') return timeline.redo();
   const k = e.key.toLowerCase();
   const map = { arrowleft: 'prev', arrowright: 'next', ' ': 'play', n: 'add', delete: 'delete', backspace: 'delete', o: 'onion', h: 'hands', j: 'feet', f: 'fps' };
   if (map[k]) {
@@ -275,6 +295,7 @@ function updatePointers(hands, dt) {
       // Poke the timeline with an index finger (not while holding a handle).
       if (h.kind === 'hand' && !d) {
         panel.mesh.worldToLocal(local.copy(h.indexTip));
+        local.z *= panel.mesh.scale.x; // press depth in meters, whatever the panel's size
         const inside = Math.abs(local.x) < 0.25 && Math.abs(local.y) < PANEL_H / 2;
         const deep = inside && local.z < PRESS_DEPTH && local.z > -0.04;
         if (deep && pressedPanel.get(h.id) === false) {
@@ -344,12 +365,16 @@ renderer.xr.addEventListener('sessionstart', () => {
   document.body.classList.add('in-xr');
   scene.background = xr.mode === 'immersive-ar' ? null : BG;
   handsView.points.material.uniforms.uScale.value = 1000;
+  panelGrab.visible = true;
   needPlace = true;
 });
 renderer.xr.addEventListener('sessionend', () => {
   document.body.classList.remove('in-xr');
   scene.background = BG;
   help.hide();
+  panelGrab.visible = false;
+  dockPanel();
+  panel.mesh.scale.setScalar(1);
   placeDesktop();
   onResize();
 });
@@ -382,7 +407,9 @@ renderer.setAnimationLoop((time, frame) => {
   const viewer = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
-  const hands = input.hands.filter((h) => h !== helpHand);
+  const peace = undoGesture.update(input.hands, dt, viewer);
+  const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
+  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && !carrying.has(h.id));
   updateSceneGrab(hands);
   wheelZoom();
   placeDesk();

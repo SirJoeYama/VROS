@@ -26,6 +26,7 @@ export class EditRig {
     this.template = this.snapshot(); // as authored: what the animations expect
     this.initial = this.template;
     this.undoStack = [];
+    this.redoStack = [];
     this.mirror = true;
     this.children = 'follow'; // or 'stay': children keep their place when a joint moves
     this.mirrorOf = new Map();
@@ -53,12 +54,24 @@ export class EditRig {
   pushUndo() {
     this.undoStack.push(this.snapshot());
     if (this.undoStack.length > 60) this.undoStack.shift();
+    this.redoStack.length = 0;
   }
 
+  // Both return true if they changed something.
   undo() {
     const s = this.undoStack.pop();
-    if (s) this.restore(s);
-    return !!s;
+    if (!s) return false;
+    this.redoStack.push(this.snapshot());
+    this.restore(s);
+    return true;
+  }
+
+  redo() {
+    const s = this.redoStack.pop();
+    if (!s) return false;
+    this.undoStack.push(this.snapshot());
+    this.restore(s);
+    return true;
   }
 
   reset() {

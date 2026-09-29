@@ -10,6 +10,7 @@ const APPS = [
   { id: 'cinema', name: 'Cinema', blurb: 'a media player you control with gestures' },
   { id: 'companion', name: 'Pip', blurb: 'a pocket companion you can talk to' },
   { id: 'rigger', name: 'Rigger', blurb: 'rig any model, give it animations' },
+  { id: 'plume', name: 'Plume', blurb: 'paint in the air, animate frame by frame' },
 ];
 
 const grid = document.getElementById('grid');
