@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="#16294a"/><stop offset="1" stop-color="#05060d"/></radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- the model, see-through -->
+  <g fill="#9fb8ff" fill-opacity=".16" stroke="#9fb8ff" stroke-opacity=".45" stroke-width="4">
+    <circle cx="256" cy="112" r="38"/>
+    <path d="M210 158h92l58 70-18 16-44-40v98l26 124h-34l-34-112-34 112h-34l26-124v-98l-44 40-18-16z"/>
+  </g>
+  <!-- the skeleton inside -->
+  <g stroke="#dfe6ff" stroke-opacity=".75" stroke-width="7" stroke-linecap="round" fill="none">
+    <path d="M256 128v152M256 176l-58 44M256 176l58 44M256 280l-30 70-12 76M256 280l30 70 12 76"/>
+  </g>
+  <g fill="#ffc36a"><circle cx="256" cy="128" r="11"/><circle cx="256" cy="176" r="11"/><circle cx="256" cy="280" r="12"/></g>
+  <g fill="#7fe7ff"><circle cx="198" cy="220" r="10"/><circle cx="226" cy="350" r="10"/><path d="M214 414l12 14-12 14-12-14z"/></g>
+  <g fill="#ff7fd0"><circle cx="314" cy="220" r="10"/><circle cx="286" cy="350" r="10"/><path d="M298 414l12 14-12 14-12-14z"/></g>
+  <!-- motion arcs -->
+  <g stroke="#7fe7ff" stroke-opacity=".6" stroke-width="6" stroke-linecap="round" fill="none">
+    <path d="M150 190a130 130 0 0 0 -18 72"/><path d="M362 190a130 130 0 0 1 18 72"/>
+  </g>
+</svg>

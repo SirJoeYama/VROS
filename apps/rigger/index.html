@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#04050a" />
+  <title>Rigger · VROS</title>
+  <link rel="manifest" href="../../manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="overlay">
+    <a class="home" href="../../">← Home</a>
+    <h1>RIGGER</h1>
+    <p class="sub">rig any model, give it animations</p>
+    <button id="enter" disabled>Checking WebXR…</button>
+    <div class="row">
+      <label class="file">Open a model…<input id="file" type="file" accept=".glb,.gltf,.fbx,.obj" /></label>
+      <button id="export">Export GLB</button>
+    </div>
+    <p id="status"></p>
+    <dl class="legend">
+      <dt>Poke the panel</dt><dd>1 MODEL → 2 SKELETON → 3 FIT → 4 ANIMATE → 5 POSE; pick, toggle, play</dd>
+      <dt>Pinch a joint, move</dt><dd>fit: move the skeleton's joints into the model (MIRROR moves both sides)</dd>
+      <dt>Pose: amber spheres (FK)</dt><dd>bend the bone behind the joint; the rest follows</dd>
+      <dt>Pose: diamonds past hands / feet</dt><dd>IK (cyan): place the hand or foot, the elbow or knee follows · FK (amber): turn it · HANDS / FEET switch (front legs count as hands)</dd>
+      <dt>Pose: magenta cube · white ring</dt><dd>move the hips with the feet planted · move the whole body</dd>
+      <dt>Pose: + FRAME, SAVE AS CLIP</dt><dd>copy this pose into a new frame · turn the frames into a clip for 4 ANIMATE and export</dd>
+      <dt>Fist + twist</dt><dd>fit: resize the skeleton · animate: scroll the clips · pose: step through frames</dd>
+      <dt>Pinch (a quick tap)</dt><dd>animate, pose: play / pause</dd>
+      <dt>Pinch empty space, both hands</dt><dd>move, scale and turn the model</dd>
+      <dt>Two fists, held 1 s</dt><dd>bring the model and panel back in front of you</dd>
+      <dt>Tick ✓ next to clips</dt><dd>choose what EXPORT GLB saves</dd>
+      <dt>Palms together (hold)</dt><dd>close the app, back to home</dd>
+      <dt>Palm toward your eyes (hold)</dt><dd>show or hide this help in XR</dd>
+    </dl>
+    <p class="desk">Desktop: click the panel · drag joints and handles · right-drag turns the model · wheel scales · drop a file on the page to open it · fit: Ctrl+Z undo, M mirror, C children · animate: space pause · pose: ←/→ frames, space play, N new frame, Del delete, O onion, H / J hands / feet IK⇄FK, S smooth, F fps</p>
+    <p class="credit">Rigs, samples and animations from <a href="https://github.com/Mesh2Motion/mesh2motion-app" target="_blank" rel="noopener">Mesh2Motion</a> (CC0).</p>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

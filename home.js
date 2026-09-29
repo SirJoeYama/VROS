@@ -9,6 +9,7 @@ const APPS = [
   { id: 'marionette', name: 'Marionette', blurb: 'pose a puppet, animate it frame by frame' },
   { id: 'cinema', name: 'Cinema', blurb: 'a media player you control with gestures' },
   { id: 'companion', name: 'Pip', blurb: 'a pocket companion you can talk to' },
+  { id: 'rigger', name: 'Rigger', blurb: 'rig any model, give it animations' },
 ];
 
 const grid = document.getElementById('grid');
