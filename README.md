@@ -123,6 +123,40 @@ The screen shows what Pip is doing: listening (antenna blinking, sound waves), t
 
 **Setup:** Pip needs an [Anthropic API key](https://console.anthropic.com/settings/keys). Paste it in window mode; it is kept in this browser's local storage and sent only to `api.anthropic.com`. There is no server; the page calls the API straight from the browser, so each question is billed to your key. The first tap on **Enter** asks for the microphone, because the permission prompt can't appear inside XR. Speech recognition works like Scribe's (Whisper on the headset). Answers are spoken with the browser's built-in voices; pick one in window mode. Desktop preview: click the egg or **Talk**, or type a question.
 
+## Rigger
+
+Rig any 3D model and give it animations, like [Mesh2Motion](https://github.com/Mesh2Motion/mesh2motion-app) (a free Mixamo alternative), done with your hands. You fit a template skeleton inside the model, Rigger works out the skin weights, and the model can then play a library of ready-made animations or ones you pose yourself. Export it all as a GLB.
+
+A panel floats in front of you with five steps; poke them in order:
+
+1. **Model**: one of nine samples, or your own file (GLB, GLTF, FBX or OBJ). Open files in window mode, with **Open a model…** or by dropping one on the page; the browser can't show a file picker inside XR. Models are put on the floor, centred, and brought to a sensible size if they're in centimetres or kilometres.
+2. **Skeleton**: Human, Fox, Horse, Bird, Dragon, Kaiju, Spider, Snake or Fish. For your own model the skeleton is first scaled to its height (or length, for flat creatures) and stood in it.
+3. **Fit**: the model turns see-through so the joints show. **Pinch a joint** and move it into place. Cyan joints are the left side, pink the right, amber the middle.
+
+   | Tool | What it does |
+   | --- | --- |
+   | **Mirror** (on by default) | The joint's twin on the other side moves with it, mirrored. |
+   | **Children follow / stay** | Moving a joint also moves the rest of the limb, or only that joint. |
+   | **Fist + twist** or **Size − / +** | Resize the whole skeleton. |
+   | **Turn model 90°** | For models that don't face the front. |
+   | **Undo**, **Reset fit**, **See-through**, **Recenter** | |
+
+4. **Animate**: **Skin & animate** binds the model to the skeleton (after Mesh2Motion's solver: each vertex follows its nearest bone, with blended seams on the torso and one-sided blends at elbows and knees so bending doesn't dent the upper limb). Poke a clip to play it (the human library has about 180; the animals have 5 to 14 each). Fist + twist scrolls the list, a quick pinch pauses. **Weights** colours the model by bone to check the skinning. Tick ✓ the clips you want and poke **Export GLB**: the rigged model plus those clips is saved to Downloads.
+5. **Pose**: make your own animation, frame by frame, like Marionette, on the rigged model itself.
+
+   | Handle | What it does |
+   | --- | --- |
+   | **Amber spheres** at the joints | **FK**: bend the bone behind the joint; everything further down follows. |
+   | **Diamonds past each hand and foot** | **IK** (cyan): place the hand or foot; the elbow or knee bends to follow and the hand/foot keeps its orientation. **FK** (amber): turn the hand or foot itself. **HANDS** and **FEET** switch each; a quadruped's front legs count as hands. Every leg of the spider is a foot. |
+   | **Magenta cube** (hips) | Move the hips while the feet stay planted. |
+   | **White ring** on the floor | Move the whole body. |
+
+   The film strip shows every frame (poke one to go there). **+ Frame** copies this pose into a new frame after it; **Prev / Play / Next**, **Delete**, **Onion skin** (skeletons of the previous frame in red and the next in blue), **FPS** (4 to 30), **Smooth / Stepped** (in-betweens on playback, or stop-motion), **Clip pose** (copy the pose of the clip last played in 4 Animate, to start from it), **Reset pose**, **New animation** (press twice). Fist + twist steps through the frames. **Save as clip** adds the frames as "My animation N" to the top of 4 Animate, ticked for export. The frames are saved in the browser for each skeleton type.
+
+Pinch empty space with both hands to move, scale and turn the model; two fists held for a second bring the model and panel back in front of you. Desktop preview: click the panel, drag joints and handles, right-drag to turn the model, wheel to scale; keys are listed on the page.
+
+The skeletons, sample models and animations are Mesh2Motion's (CC0), in `apps/rigger/assets/`; the skinning is a port of its solver (MIT).
+
 ## Run it on your Quest 3
 
 WebXR needs a secure origin (HTTPS or `localhost`).
@@ -197,4 +231,14 @@ apps/companion/     Pip
   src/lcd.js        the 48 × 32 pixel screen and the creature's moods
   src/bubble.js     speech bubble: what you said, the answer, status
   src/main.js       listening → thinking → speaking loop, gestures, XR
+apps/rigger/
+  assets/           Mesh2Motion's skeletons, sample models and animation libraries (CC0)
+  src/rigs.js       the skeleton types and their files
+  src/model.js      loading GLB / GLTF / FBX / OBJ into plain meshes on the floor
+  src/skeleton.js   fitting: moving joints (mirror, children follow/stay), scaling, undo, first guess
+  src/skinning.js   automatic skin weights (after Mesh2Motion's solver)
+  src/rigged.js     binding, retargeting library clips, playback, GLB export
+  src/pose.js       posing (FK, two-bone IK, planted hips), frames, onion skin, clips
+  src/panel.js      the pokeable panel: steps, items, film strip, actions
+  src/main.js       steps, gestures, mouse, XR
 ```
