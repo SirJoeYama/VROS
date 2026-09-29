@@ -88,7 +88,7 @@ Stop-motion animation in XR: pose a jointed puppet on a small stage, capture the
 | **Magenta cube** (hips) | Moves the hips while the feet stay planted: the legs re-solve by IK. |
 | **White ring on the floor** | Moves the whole puppet. |
 
-**The whole scene.** Pinch empty space with both hands, like in Galaxies: move your hands to move the stage, pull them apart or together to scale it (¼× to 4×), turn them to turn it. The timeline follows the stage but keeps its size.
+**Looking around.** Pinch empty space with both hands to move your view (the camera), not the puppet: move your hands to travel, pull them apart to zoom in (you get smaller and the stage bigger, down to 1/10 of your size) or together to zoom out (up to 10×), and turn them to turn the view around you; the floor stays level. The puppet, stage and poses never change, and the timeline stays with you. Two fists or a controller's thumbstick click recenters, back to life size. Handles, grab distances and gestures keep the same size to your hands at any zoom. On the desktop, the wheel still scales the stage and the timeline follows it.
 
 The skeleton is a hierarchy: hips → spine → chest → neck → head, chest → shoulders → elbows → hands, hips → hip joints → knees → feet. Both hands can hold handles at once.
 
@@ -104,7 +104,8 @@ A media player on a big floating screen, controlled with your hands.
 | --- | --- |
 | **Pinch (a quick tap)** | Play / pause. |
 | **Fist + twist** | A jog dial: clockwise fast-forwards, counter-clockwise rewinds. One full turn is one minute; the screen shows how far you've gone. |
-| **Pinch with both hands** | Move, scale and turn the screen. |
+| **Pinch with both hands** | Look around: move your view (the camera), pull apart to zoom in, push together to zoom out, turn your hands to turn the view. The screen stays where it is; the remote stays with you. |
+| **Two fists, held ~1 s** | Back in front of the screen, at life size. (The jog dial only answers one fist.) |
 | **Remote** (a small panel near your hands) | Poke: previous · −10 s · play/pause · +10 s · next, or poke the progress bar to jump there. |
 
 Pick what to play in window mode: **Open files…** (video or audio from the headset's storage) or paste a link. Two free samples are loaded to start with. Audio files show a title card instead of a picture. Links from other sites only show a picture if the site allows it (CORS); local files always work. Desktop preview: click to play/pause, the wheel scrubs, ←/→ jump 10 s.
@@ -119,7 +120,8 @@ A pocket companion that lives in a little egg-shaped gadget with a pixel screen,
 | **Just talk** | After each answer Pip listens again, so you can keep the conversation going. It stops after 30 s of silence. |
 | **Poke the buttons** | TALK · HUSH (stop the answer) · FORGET (clear the conversation). |
 | **Poke the screen** | Tickle Pip. |
-| **Pinch with both hands** | Move, scale and turn Pip. |
+| **Pinch with both hands** | Look around: move your view (the camera), pull apart to zoom in, push together to zoom out, turn your hands to turn the view. Pip stays where it is. |
+| **Two fists, held ~1 s** | Back in front of Pip, at life size. |
 
 The screen shows what Pip is doing: listening (antenna blinking, sound waves), thinking, searching the web (a globe), speaking (a moving mouth), or asleep after a while with nothing to do. A speech bubble above the egg shows what it heard and its answer.
 
@@ -153,9 +155,9 @@ A panel floats in front of you with five steps; poke them in order:
    | **Magenta cube** (hips) | Move the hips while the feet stay planted. |
    | **White ring** on the floor | Move the whole body. |
 
-   The film strip shows every frame (poke one to go there). **+ Frame** copies this pose into a new frame after it; **Prev / Play / Next**, **Delete**, **Onion skin** (skeletons of the previous frame in red and the next in blue), **FPS** (4 to 30), **Smooth / Stepped** (in-betweens on playback, or stop-motion), **Clip pose** (copy the pose of the clip last played in 4 Animate, to start from it), **Reset pose**, **New animation** (press twice). Fist + twist steps through the frames. **Save as clip** adds the frames as "My animation N" to the top of 4 Animate, ticked for export. The frames are saved in the browser for each skeleton type.
+   The film strip shows every frame (poke one to go there). **+ Frame** copies this pose into a new frame after it; **Prev / Play / Next**, **Delete**, **Onion skin** (skeletons of the previous frame in red and the next in blue), **FPS** (4 to 30), **Smooth / Stepped** (in-betweens on playback, or stop-motion), **Clip pose** (copy the pose of the clip last played in 4 Animate, to start from it), **Reset pose**, **New animation** (press twice). Fist + twist steps through the frames. **Save as clip** adds the frames as "My animation N" to the top of 4 Animate, ticked for export; **Export** is on this step's panel too. Saved clips and the frames are kept in the browser for each skeleton type, so they're still there after a reload or after closing the app, and come back whenever you skin a model with that skeleton. To delete a saved clip, play it in 4 Animate and poke **Remove ★**.
 
-Pinch the bar under the panel to carry it somewhere else, or pinch its bottom-right corner and pull to resize it; it stays where you put it. Pinch empty space with both hands to move, scale and turn the model; two fists held for a second (or **Recenter**) bring the model and panel back in front of you. Desktop preview: click the panel, drag joints and handles, right-drag to turn the model, wheel to scale; keys are listed on the page.
+Pinch the bar under the panel to carry it somewhere else, or pinch its bottom-right corner and pull to resize it; it stays where you put it. Pinch empty space with both hands to look around: this moves your view (the camera), never the model, so the fit, the skin and the poses don't change. Move your hands to travel, pull them apart to zoom in, push them together to zoom out, turn them to turn the view; the floor stays level, and the panel stays with you. Two fists held for a second (or **Recenter**) bring the model and panel back in front of you at life size. Desktop preview: click the panel, drag joints and handles, right-drag to turn the model, wheel to scale; keys are listed on the page.
 
 The skeletons, sample models and animations are Mesh2Motion's (CC0), in `apps/rigger/assets/`; the skinning is a port of its solver (MIT).
 
@@ -211,7 +213,8 @@ shared/             used by the home screen and every app
   pointsMaterial.js glowing point shader
   closeGesture.js   palms together → close the app (home: leave XR)
   fistTwist.js      fist + twist as a knob (Scribe scrolling, Cinema scrubbing)
-  sceneGrab.js      two-hand pinch → move / scale / turn (Marionette, Cinema, Pip, Rigger)
+  sceneGrab.js      two-hand pinch → move / scale / turn an object (Plume's drawing)
+  navGrab.js        two-hand pinch → move / zoom / turn your view, via a camera "dolly" (Marionette, Rigger, Cinema, Pip)
   panelGrab.js      grab bar and corner grip to move / resize a floating panel (Marionette, Rigger)
   helpGesture.js    palm toward your eyes → help card
   undoGesture.js    peace sign held 1 s → undo (left hand) / redo (right hand)

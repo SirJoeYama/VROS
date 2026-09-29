@@ -31,6 +31,7 @@ function makeState(id) {
     fist: false,
     palmUp: false,
     pinchPoint: new THREE.Vector3(),
+    realPinch: new THREE.Vector3(), // the pinch point in the room, before `origin` (see Input)
     palmCenter: new THREE.Vector3(),
     palmNormal: new THREE.Vector3(0, -1, 0),
     indexTip: new THREE.Vector3(),
@@ -101,6 +102,11 @@ export class Input {
     this.hands = [];
     this.events = []; // 'next' | 'prev' | 'recenter'
     this.wheel = 0;
+    // Optional: the Object3D the XR camera sits in (a "dolly" that moves and
+    // scales your viewpoint). Tracked hands and controllers are then given in
+    // world space, so they line up with what you see; `realPinch` keeps the
+    // pinch point in the room's own space.
+    this.origin = null;
 
     this.mouse = { ndc: new THREE.Vector2(), l: false, r: false, inside: false };
     this.raycaster = new THREE.Raycaster();
@@ -161,6 +167,7 @@ export class Input {
         st.pressure = 1;
         st.jointCount = JOINTS.length;
         analyzeHand(st);
+        this._toWorld(st);
         trackVelocity(st, st.palmCenter, dt);
         st.active = true;
       } else if (src.gripSpace) {
@@ -189,10 +196,29 @@ export class Input {
         edge(4, 'next');
         edge(5, 'prev');
         edge(3, 'recenter');
+        this._toWorld(st);
         trackVelocity(st, st.palmCenter, dt);
         st.active = true;
       }
     }
+  }
+
+  // Hand geometry is analysed in the room (pinch and fist thresholds are real
+  // distances); then positions and directions go through `origin`.
+  _toWorld(st) {
+    st.realPinch.copy(st.pinchPoint);
+    const o = this.origin;
+    if (!o) return;
+    o.updateMatrixWorld();
+    const m = o.matrixWorld;
+    for (let k = 0; k < st.jointCount; k++) {
+      _a.fromArray(st.joints, k * 3).applyMatrix4(m).toArray(st.joints, k * 3);
+    }
+    st.pinchPoint.applyMatrix4(m);
+    st.palmCenter.applyMatrix4(m);
+    st.indexTip.applyMatrix4(m);
+    st.palmNormal.transformDirection(m);
+    st.lateral.transformDirection(m);
   }
 
   _updateMouse(dt, center) {

@@ -11,12 +11,13 @@ const _fwd = new THREE.Vector3(), _right = new THREE.Vector3();
 // Help pose: an open hand held up near eye height, palm facing your eyes,
 // fingers pointing up — like reading a note in your hand. It stays clear of
 // palm-up (lower, palm to the sky) and of open-palm wind (palm facing away).
-function inHelpPose(h, eye) {
+// `k`: your size in the world (1 unless the app zooms its view).
+function inHelpPose(h, eye, k = 1) {
   if (h.kind !== 'hand' || !h.open) return false;
   _toEye.copy(eye).sub(h.palmCenter);
-  const dist = _toEye.length();
+  const dist = _toEye.length() / k;
   if (dist < 0.15 || dist > 0.7) return false;
-  if (h.palmCenter.y < eye.y - 0.25) return false;
+  if (h.palmCenter.y < eye.y - 0.25 * k) return false;
   _toEye.divideScalar(dist);
   const j = h.joints;
   _up.set(j[33] - j[0], j[34] - j[1], j[35] - j[2]).normalize(); // wrist → middle knuckle
@@ -68,7 +69,8 @@ export class HelpGesture {
   // ignore it for their own gestures.
   update(hands, dt, viewer) {
     viewer.getWorldPosition(_eye);
-    const hand = hands.find((h) => inHelpPose(h, _eye)) || null;
+    this.k = viewer.getWorldScale(_up).x;
+    const hand = hands.find((h) => inHelpPose(h, _eye, this.k)) || null;
 
     if (hand && this.armed) {
       this.hold += dt;
@@ -107,9 +109,12 @@ export class HelpGesture {
     _fwd.normalize();
     _right.set(-_fwd.z, 0, _fwd.x);
     const side = hand ? Math.sign(_toEye.copy(hand.palmCenter).sub(_eye).dot(_right)) || 1 : 0;
-    this.panel.position.copy(_eye).addScaledVector(_fwd, 0.55).addScaledVector(_right, -side * 0.16);
-    this.panel.position.y -= 0.04;
+    const k = viewer.getWorldScale(_up).x;
+    this.panel.position.copy(_eye).addScaledVector(_fwd, 0.55 * k).addScaledVector(_right, -side * 0.16 * k);
+    this.panel.position.y -= 0.04 * k;
     this.panel.lookAt(_eye);
+    this.panel.scale.multiplyScalar(k / (this._k || 1));
+    this._k = k;
   }
 
   _render(title, rows) {
@@ -155,6 +160,7 @@ export class HelpGesture {
     this.panel.material.map = this.texture;
     this.panel.material.needsUpdate = true;
     this.panel.scale.set(PANEL_W, (PANEL_W * h) / CW, 1);
+    this._k = 1; // _place scales it to your size
   }
 }
 

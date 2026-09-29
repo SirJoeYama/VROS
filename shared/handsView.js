@@ -16,12 +16,15 @@ export class HandsView {
     geo.setAttribute('position', this.posAttr);
     geo.setAttribute('aSpeed', this.glowAttr);
     geo.setAttribute('aSeed', new THREE.BufferAttribute(this.seed, 1));
-    this.points = new THREE.Points(geo, makePointsMaterial({ size: 0.007, colorA: [0.75, 0.85, 1], colorB: [0.75, 0.85, 1] }));
+    this.size = 0.007;
+    this.points = new THREE.Points(geo, makePointsMaterial({ size: this.size, colorA: [0.75, 0.85, 1], colorB: [0.75, 0.85, 1] }));
     this.points.frustumCulled = false;
     this.points.renderOrder = 5;
   }
 
-  update(hands) {
+  // `scale`: your size in the world (1 unless the app zooms its view).
+  update(hands, scale = 1) {
+    this.points.material.uniforms.uSize.value = this.size * scale;
     let v = 0;
     for (const h of hands) {
       for (let k = 0; k < h.jointCount && v < MAX; k++, v++) {

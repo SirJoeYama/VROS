@@ -5,7 +5,7 @@ import { CloseGesture } from '../../../shared/closeGesture.js';
 import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
-import { SceneGrab } from '../../../shared/sceneGrab.js';
+import { NavGrab, resetDolly } from '../../../shared/navGrab.js';
 import { Speech, micPermission } from '../../../shared/speech.js';
 import { Pet } from './pet.js';
 import { Bubble, BUBBLE_H } from './bubble.js';
@@ -33,6 +33,12 @@ document.body.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = BG;
 const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.01, 50);
+// The camera sits in a "dolly": grabbing empty space with both hands moves,
+// turns and scales the dolly (your view), never Pip.
+const dolly = new THREE.Group();
+dolly.add(camera);
+scene.add(dolly);
+const you = () => dolly.scale.x; // your size in the world: real distances get multiplied by it
 scene.add(new THREE.HemisphereLight(0xfff4f8, 0x404060, 1.6));
 const sun = new THREE.DirectionalLight(0xffffff, 2.2);
 sun.position.set(0.6, 1.2, 1);
@@ -312,6 +318,7 @@ function placeXR(frame) {
   fwd.y = 0;
   if (fwd.lengthSq() < 1e-4) fwd.set(0, 0, -1);
   fwd.normalize();
+  resetDolly(dolly); // back to your real place and size
   pet.group.position.set(p.x + fwd.x * 0.5, p.y - 0.2, p.z + fwd.z * 0.5);
   pet.group.lookAt(p.x, p.y - 0.2, p.z);
   pet.group.scale.setScalar(1);
@@ -322,6 +329,7 @@ function placeXR(frame) {
 const handsView = new HandsView();
 scene.add(handsView.points);
 const input = new Input(renderer, camera);
+input.origin = dolly; // tracked hands come in world space, wherever the view has gone
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
 // Peace sign held a second: undo / redo (nothing to undo here, it just says so).
@@ -340,16 +348,30 @@ function toPet(p) {
   return pet.body.worldToLocal(local.copy(p));
 }
 
-function updateGestures(hands) {
-  const t = now();
-  const pinching = hands.filter((h) => h.pinch && h.kind !== 'mouse');
-
-  // Two hands pinching: move / scale / turn Pip. Neither pinch is a tap.
+// Two hands pinching empty space: look around. Move your view, pull apart /
+// push together to zoom, turn your hands to turn the view; it only moves the
+// camera. Two fists held for a second: back in front of Pip, at life size.
+let fistsHeld = 0;
+function updateView(pinching, hands, dt) {
   if (pinching.length >= 2) {
-    if (!grab) grab = new SceneGrab(pet.group, pinching[0].pinchPoint, pinching[1].pinchPoint, { min: 0.4, max: 4 });
-    grab.update(pinching[0].pinchPoint, pinching[1].pinchPoint);
+    grab ??= new NavGrab(dolly, pinching[0].realPinch, pinching[1].realPinch, { min: 0.1, max: 10 });
+    grab.update(pinching[0].realPinch, pinching[1].realPinch);
     for (const h of pinching) if (pinches.has(h.id)) pinches.get(h.id).cancelled = true;
   } else grab = null;
+  const fists = hands.filter((h) => h.kind === 'hand' && h.fist).length;
+  fistsHeld = fists === 2 ? fistsHeld + dt : 0;
+  if (fistsHeld > 1) {
+    fistsHeld = -1e9; // once per hold
+    needPlace = true;
+  }
+  return fists;
+}
+
+function updateGestures(hands, dt) {
+  const t = now();
+  const pinching = hands.filter((h) => h.pinch && h.kind !== 'mouse');
+  // Neither pinch of a two-hand grab is a tap.
+  updateView(pinching, hands, dt);
 
   for (const h of hands) {
     if (h.kind === 'mouse') continue; // clicks: see the listeners below
@@ -359,7 +381,7 @@ function updateGestures(hands) {
       pinches.set(h.id, { t, at: h.pinchPoint.clone(), cancelled: pet.near(toPet(h.pinchPoint), 0.02) || !!grab });
     } else if (!h.pinch && p) {
       pinches.delete(h.id);
-      if (!p.cancelled && t - p.t < TAP_TIME && h.pinchPoint.distanceTo(p.at) < TAP_MOVE) talk();
+      if (!p.cancelled && t - p.t < TAP_TIME && h.pinchPoint.distanceTo(p.at) < TAP_MOVE * you()) talk();
     }
 
     // Poke a button (or the screen) with an index finger.
@@ -469,11 +491,11 @@ renderer.setAnimationLoop((time, frame) => {
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
   undoGesture.update(input.hands, dt, viewer);
-  updateGestures(input.hands.filter((h) => h !== helpHand));
+  updateGestures(input.hands.filter((h) => h !== helpHand), dt);
   updatePhase();
   if (phase === 'listening' && speechStatus && !heard && !bubble.answer) bubble.set({ status: speechStatus === 'listening' ? 'listening…' : speechStatus });
   pet.update(dt, face());
   bubble.draw();
-  handsView.update(input.hands);
+  handsView.update(input.hands, you());
   renderer.render(scene, camera);
 });

@@ -250,10 +250,15 @@ export class Poser {
   // last frame is keyed again at the end so it keeps its full length (a GLB
   // clip lasts until its last key).
   clip(name) {
-    const n = this.frames.length, dt = 1 / this.fps;
-    const frames = [...this.frames, this.frames[n - 1]];
+    return this.clipFrom({ name, frames: this.frames, fps: this.fps, smooth: this.smooth });
+  }
+
+  // A clip from saved frames (see saved()).
+  clipFrom({ name, frames: saved, fps, smooth }) {
+    const n = saved.length, dt = 1 / fps;
+    const frames = [...saved, saved[n - 1]];
     const times = frames.map((_, i) => i * dt);
-    const interp = this.smooth ? THREE.InterpolateLinear : THREE.InterpolateDiscrete;
+    const interp = smooth ? THREE.InterpolateLinear : THREE.InterpolateDiscrete;
     const tracks = this.bones.map((b, i) => {
       const v = [];
       for (const f of frames) v.push(...(f.rot[b.name] || this.restQ[i].toArray()));
@@ -269,6 +274,11 @@ export class Poser {
     const clip = new THREE.AnimationClip(name, n * dt, tracks);
     clip.custom = true; // made on this skeleton: no retargeting
     return clip;
+  }
+
+  // What SAVE AS CLIP keeps, so the clip can be rebuilt after a reload.
+  saved(name) {
+    return { name, frames: structuredClone(this.frames), fps: this.fps, smooth: this.smooth };
   }
 
   // ---------- handles ----------
@@ -386,7 +396,7 @@ export class Poser {
     if (v.h.type !== 'move') return v.m.position.distanceTo(p);
     const rel = _a.copy(p).sub(v.m.position);
     const height = rel.dot(UP);
-    return Math.hypot(rel.addScaledVector(UP, -height).length() - RING_R, height);
+    return Math.hypot(rel.addScaledVector(UP, -height).length() - RING_R * (this.k || 1), height);
   }
 
   // ---------- the view: handles and onion-skin skeletons ----------
@@ -454,15 +464,17 @@ export class Poser {
     return segs;
   }
 
-  // `grabbed`, `hovered`: sets of view entries; `size`: joint radius (m).
-  update(dt, grabbed, hovered, size) {
+  // `grabbed`, `hovered`: sets of view entries; `size`: joint radius (m);
+  // `k`: your size in the world (for the ring).
+  update(dt, grabbed, hovered, size, k = 1) {
+    this.k = k;
     for (const v of this.view) {
       this.handlePosition(v.h, v.m.position);
       if (v.h.type === 'end') v.m.material.color.setHex(this.modes[v.h.limb.type] === 'ik' ? CYAN : AMBER);
       if (v.h.type === 'move') v.m.quaternion.setFromAxisAngle(_a.set(1, 0, 0), Math.PI / 2);
       const target = grabbed.has(v) ? 1 : hovered.has(v) ? 0.6 : 0;
       v.hover += (target - v.hover) * Math.min(1, dt * 14);
-      v.m.scale.setScalar(v.h.type === 'move' ? 1 + v.hover * 0.2 : size * (1 + v.hover * 0.7));
+      v.m.scale.setScalar(v.h.type === 'move' ? k * (1 + v.hover * 0.2) : size * (1 + v.hover * 0.7));
       v.m.material.opacity = 0.55 + v.hover * 0.45;
       v.m.visible = !this.playing;
     }
