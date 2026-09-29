@@ -6,7 +6,7 @@ import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { FistTwist } from '../../../shared/fistTwist.js';
-import { SceneGrab } from '../../../shared/sceneGrab.js';
+import { NavGrab, resetDolly } from '../../../shared/navGrab.js';
 import { Player, formatTime } from './player.js';
 import { Remote, REMOTE_W, REMOTE_H } from './remote.js';
 
@@ -29,6 +29,13 @@ document.body.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = BG;
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.01, 50);
+// The camera sits in a "dolly": grabbing empty space with both hands moves,
+// turns and scales the dolly (your view), never the screen.
+// The remote lives in it too, so it stays with you.
+const dolly = new THREE.Group();
+dolly.add(camera);
+scene.add(dolly);
+const you = () => dolly.scale.x; // your size in the world: real distances get multiplied by it
 
 // ---------- player ----------
 const video = document.createElement('video');
@@ -116,7 +123,7 @@ function updateScreen() {
 
 // ---------- remote ----------
 const remote = new Remote(player);
-scene.add(remote.mesh);
+dolly.add(remote.mesh);
 
 // ---------- 2D page ----------
 const $ = (id) => document.getElementById(id);
@@ -171,6 +178,7 @@ function placeXR(frame) {
   if (fwd.lengthSq() < 1e-4) fwd.set(0, 0, -1);
   fwd.normalize();
   const head = new THREE.Vector3(p.x, p.y, p.z);
+  resetDolly(dolly); // back to your real place and size
   theater.position.set(p.x + fwd.x * 1.4, p.y, p.z + fwd.z * 1.4);
   theater.lookAt(head.x, p.y, head.z);
   remote.mesh.position.set(p.x + fwd.x * 0.42, p.y - 0.4, p.z + fwd.z * 0.42);
@@ -182,6 +190,7 @@ function placeXR(frame) {
 const handsView = new HandsView();
 scene.add(handsView.points);
 const input = new Input(renderer, camera);
+input.origin = dolly; // tracked hands come in world space, wherever the view has gone
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
 // Peace sign held a second: undo / redo (nothing to undo here, it just says so).
@@ -201,16 +210,30 @@ function onRemote(point, depth) {
   return Math.abs(local.x) < REMOTE_W / 2 && Math.abs(local.y) < REMOTE_H / 2 && local.z < depth && local.z > -0.04;
 }
 
+// Two hands pinching empty space: look around. Move your view, pull apart /
+// push together to zoom, turn your hands to turn the view; it only moves the
+// camera. Two fists held for a second: back in front of the screen, at life size.
+let fistsHeld = 0;
+function updateView(pinching, hands, dt) {
+  if (pinching.length >= 2) {
+    grab ??= new NavGrab(dolly, pinching[0].realPinch, pinching[1].realPinch, { min: 0.1, max: 10 });
+    grab.update(pinching[0].realPinch, pinching[1].realPinch);
+    for (const h of pinching) if (pinches.has(h.id)) pinches.get(h.id).cancelled = true;
+  } else grab = null;
+  const fists = hands.filter((h) => h.kind === 'hand' && h.fist).length;
+  fistsHeld = fists === 2 ? fistsHeld + dt : 0;
+  if (fistsHeld > 1) {
+    fistsHeld = -1e9; // once per hold
+    needPlace = true;
+  }
+  return fists;
+}
+
 function updateGestures(hands, dt) {
   const now = performance.now() / 1000;
   const pinching = hands.filter((h) => h.pinch && h.kind !== 'mouse');
-
-  // Two hands pinching: move / scale / turn the screen. Neither pinch is a tap.
-  if (pinching.length >= 2) {
-    if (!grab) grab = new SceneGrab(theater, pinching[0].pinchPoint, pinching[1].pinchPoint, { min: 0.3, max: 5 });
-    grab.update(pinching[0].pinchPoint, pinching[1].pinchPoint);
-    for (const h of pinching) if (pinches.has(h.id)) pinches.get(h.id).cancelled = true;
-  } else grab = null;
+  // Neither pinch of a two-hand grab is a tap.
+  const fists = updateView(pinching, hands, dt);
 
   let twisting = false;
   for (const h of hands) {
@@ -223,7 +246,7 @@ function updateGestures(hands, dt) {
       pinches.set(h.id, { t: now, at: h.pinchPoint.clone(), cancelled: onRemote(h.pinchPoint, 0.06) || !!grab });
     } else if (!h.pinch && p) {
       pinches.delete(h.id);
-      const still = h.pinchPoint.distanceTo(p.at) < TAP_MOVE;
+      const still = h.pinchPoint.distanceTo(p.at) < TAP_MOVE * you();
       if (!p.cancelled && now - p.t < TAP_TIME && still) {
         player.toggle();
         flash(player.playing || player.pendingPlay ? '▶' : '❚❚');
@@ -231,7 +254,8 @@ function updateGestures(hands, dt) {
     }
 
     // Fist + twist: a jog dial. Clockwise goes forward, counter-clockwise back.
-    if (h.kind === 'hand' && h.fist) {
+    // (One fist only: two fists are the recenter gesture.)
+    if (h.kind === 'hand' && h.fist && fists === 1) {
       twisting = true;
       const d = twist.roll(h);
       if (Math.abs(d) > 0.003) {
@@ -364,6 +388,6 @@ renderer.setAnimationLoop((time, frame) => {
   updateGestures(input.hands.filter((h) => h !== helpHand), dt);
   updateScreen();
   remote.draw();
-  handsView.update(input.hands);
+  handsView.update(input.hands, you());
   renderer.render(scene, camera);
 });

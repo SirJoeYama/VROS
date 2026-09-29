@@ -19,14 +19,15 @@ function reach(h, knuckle, tip) {
 }
 
 // A peace sign: index and middle straight and apart, ring and pinky curled.
-export function isPeace(h) {
+// `k`: your size in the world (1 unless the app zooms its view).
+export function isPeace(h, k = 1) {
   if (h.kind !== 'hand' || h.pinch || h.jointCount < 25) return false;
   if (reach(h, 6, 9) < 1.5 || reach(h, 11, 14) < 1.5) return false;
   if (reach(h, 16, 19) > 1.35 || reach(h, 21, 24) > 1.35) return false;
   // the two raised fingers spread into a V
   const d1 = joint(h, 9, _a).sub(joint(h, 6, _c)).normalize();
   const d2 = joint(h, 14, _b).sub(joint(h, 11, _c)).normalize();
-  return d1.angleTo(d2) > 0.16 && joint(h, 9, _a).distanceTo(joint(h, 14, _b)) > 0.02;
+  return d1.angleTo(d2) > 0.16 && joint(h, 9, _a).distanceTo(joint(h, 14, _b)) > 0.02 * k;
 }
 
 // Undo and redo, the same in every app: hold a peace sign for a second, the
@@ -64,10 +65,11 @@ export class UndoGesture {
   // own gestures if they want to.
   update(hands, dt, viewer) {
     viewer.getWorldPosition(_eye);
+    const k = (this.k = viewer.getWorldScale(_c).x);
     const making = [];
     for (const kind of ['undo', 'redo']) {
       const side = kind === 'undo' ? 'left' : 'right';
-      const h = hands.find((x) => x.handedness === side && isPeace(x));
+      const h = hands.find((x) => x.handedness === side && isPeace(x, k));
       const r = this.rings[kind];
       if (h) {
         making.push(h);
@@ -88,6 +90,7 @@ export class UndoGesture {
       if (r.ring.visible) {
         r.ring.position.copy(r.at);
         r.ring.lookAt(_eye);
+        r.ring.scale.setScalar(k);
         r.ring.geometry.setDrawRange(0, Math.max(2, Math.round(p * SEGMENTS) + 1));
         r.ring.material.opacity = 0.35 + 0.65 * p;
       }
@@ -97,7 +100,7 @@ export class UndoGesture {
     t.sprite.visible = t.life > 0;
     if (t.sprite.visible) {
       t.sprite.material.opacity = Math.min(1, t.life * 3);
-      t.sprite.position.y += dt * 0.03; // drifts up as it fades
+      t.sprite.position.y += dt * 0.03 * k; // drifts up as it fades
     }
     return making;
   }
@@ -106,7 +109,8 @@ export class UndoGesture {
     const label = this.actions[kind]?.();
     const text = label || (kind === 'undo' ? 'Nothing to undo' : 'Nothing to redo');
     this._showToast(`${kind === 'undo' ? '↶' : '↷'}  ${text}`, label ? COLORS[kind] : 0x8b93b3);
-    this.toast.sprite.position.copy(at).add(_a.set(0, 0.07, 0));
+    this.toast.sprite.position.copy(at).add(_a.set(0, 0.07 * this.k, 0));
+    this.toast.sprite.scale.set(0.2 * this.k, 0.0375 * this.k, 1);
   }
 
   _icon(char, color) {

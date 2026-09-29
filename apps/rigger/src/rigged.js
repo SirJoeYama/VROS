@@ -130,6 +130,7 @@ export class Rigged {
   // A GLB with the rigged model and the chosen clips.
   async exportGLB(clips) {
     const weights = this.showWeights;
+    const resume = this.action ? this.clip : null; // only what was actually playing
     if (weights) this.setWeightsView(false);
     this.mixer.stopAllAction();
     this.armature.traverse((o) => {
@@ -148,7 +149,8 @@ export class Rigged {
       });
       return await new GLTFExporter().parseAsync(this.group, { binary: true, animations });
     } finally {
-      if (this.clip) this.play(this.clip);
+      if (resume) this.play(resume);
+      else this.action = null;
       if (weights) this.setWeightsView(true);
     }
   }

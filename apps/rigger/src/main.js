@@ -5,7 +5,7 @@ import { CloseGesture } from '../../../shared/closeGesture.js';
 import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { FistTwist } from '../../../shared/fistTwist.js';
-import { SceneGrab } from '../../../shared/sceneGrab.js';
+import { NavGrab, resetDolly } from '../../../shared/navGrab.js';
 import { PanelGrab } from '../../../shared/panelGrab.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { RIGS, rigUrl, modelUrl } from './rigs.js';
@@ -41,6 +41,13 @@ const sun = new THREE.DirectionalLight(0xffffff, 1.6);
 sun.position.set(0.6, 2, 1.2);
 scene.add(sun);
 const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.01, 100);
+// The camera sits in a "dolly": grabbing empty space with both hands moves,
+// turns and scales the dolly (your view), never the model. Things that stay
+// with you (the panel) live in it too.
+const dolly = new THREE.Group();
+dolly.add(camera);
+scene.add(dolly);
+const you = () => dolly.scale.x; // your size in the world: real distances get multiplied by it
 
 // The stage holds the model, the skeleton being fitted and the rigged result,
 // in the model's own units; it is scaled to a comfortable size in the room.
@@ -58,7 +65,7 @@ stage.add(floor);
 const panel = new Panel();
 const desk = new THREE.Group();
 desk.add(panel.mesh);
-scene.add(desk);
+dolly.add(desk);
 // Pinch the bar under the panel to carry it, or its corner to resize it. A
 // panel you've placed stays there until you recenter.
 const panelGrab = new PanelGrab(desk, panel.mesh, PANEL_W, PANEL_H);
@@ -66,6 +73,7 @@ const panelGrab = new PanelGrab(desk, panel.mesh, PANEL_W, PANEL_H);
 const handsView = new HandsView();
 scene.add(handsView.points);
 const input = new Input(renderer, camera);
+input.origin = dolly; // tracked hands come in world space, wherever the view has gone
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
 // Peace sign held a second: left hand undo, right hand redo.
@@ -204,6 +212,7 @@ async function skin() {
     S.poser = new Poser(S.rigged, S.editRig);
     S.poser.group.visible = false;
     scene.add(S.poser.group);
+    restoreClips();
     S.riggedVersion = S.version;
     ok = true;
   });
@@ -222,6 +231,7 @@ async function exportGLB() {
   const clips = allClips().filter((c) => S.chosen.has(c.name));
   await busy('Exporting…', async () => {
     const buf = await S.rigged.exportGLB(clips);
+    if (S.step === 'pose') S.poser.show(); // exporting put the skeleton back at rest
     const name = `${S.model.name.replace(/[^\w\- ]+/g, '').trim() || 'model'}-rigged.glb`;
     download(buf, name);
     say(`Saved ${name} with ${clips.length} animation${clips.length === 1 ? '' : 's'} (in Downloads).`);
@@ -243,6 +253,30 @@ async function busy(text, fn) {
 }
 
 const allClips = () => [...S.custom, ...(S.clips || [])];
+
+// Clips saved in 5 POSE are kept in the browser for each skeleton type (as
+// their frames), so they survive reloads, closing the app and re-skinning.
+const clipsKey = (rig) => `vros.rigger.clips.${rig.id}`;
+function savedClips(rig) {
+  try {
+    return JSON.parse(localStorage.getItem(clipsKey(rig)) || '[]');
+  } catch {
+    return [];
+  }
+}
+function storeClips(rig, list) {
+  try {
+    localStorage.setItem(clipsKey(rig), JSON.stringify(list));
+    return true;
+  } catch {
+    return false;
+  }
+}
+function restoreClips() {
+  const first = !S.custom.length;
+  S.custom = savedClips(S.rigDef).map((c) => S.poser.clipFrom(c));
+  if (first) for (const c of S.custom) S.chosen.add(c.name); // ticked for export, like when saved
+}
 
 // ---------- steps ----------
 function go(step) {
@@ -348,6 +382,7 @@ function panelState() {
         { id: 'p:next', label: 'NEXT  ▶' },
         { id: 'p:add', label: '+ FRAME', strong: true },
         { id: 'p:delete', label: 'DELETE', off: n < 2 },
+        { id: 'export', label: `EXPORT (${S.chosen.size})` },
       ],
     };
   }
@@ -363,6 +398,7 @@ function panelState() {
       { id: 'pause', label: r?.paused ? '▶  PLAY' : '❚❚  PAUSE' },
       { id: 'weights', label: 'WEIGHTS', on: r?.showWeights },
       { id: 'all', label: n && n === clips.length ? 'NONE' : 'ALL' },
+      { id: 'removeClip', label: 'REMOVE ★', off: !r?.clip?.custom },
       { id: 'export', label: `EXPORT GLB (${n})`, strong: true },
     ],
   };
@@ -414,7 +450,21 @@ async function press(id) {
       if (S.chosen.size === clips.length) S.chosen.clear();
       else for (const c of clips) S.chosen.add(c.name);
     },
-    export: () => S.rigged && exportGLB(),
+    export: () => {
+      S.poser?.stop();
+      return S.rigged && exportGLB();
+    },
+    // Remove a clip made in 5 POSE (the one playing).
+    removeClip: () => {
+      const c = S.rigged?.clip;
+      if (!c?.custom) return;
+      storeClips(S.rigDef, savedClips(S.rigDef).filter((x) => x.name !== c.name));
+      S.custom = S.custom.filter((x) => x !== c);
+      S.chosen.delete(c.name);
+      const next = S.lastClip?.clip || S.clips?.find((x) => /idle/i.test(x.name)) || S.clips?.[0];
+      if (next) S.rigged.play(next);
+      say(`Removed “${c.name}”.`);
+    },
   };
   edits[id]?.();
 }
@@ -457,10 +507,13 @@ function posePress(id) {
       p.stop();
       let k = S.custom.length + 1;
       while (allClips().some((c) => c.name === `My animation ${k}`)) k++;
-      const clip = p.clip(`My animation ${k}`);
+      const name = `My animation ${k}`;
+      const kept = storeClips(S.rigDef, [...savedClips(S.rigDef), p.saved(name)]);
+      const clip = p.clip(name);
       S.custom.push(clip);
       S.chosen.add(clip.name);
-      say(`Saved “${clip.name}”: it's at the top of 4 ANIMATE, ticked for export.`);
+      const still = p.frames.length < 2 ? ' It has one frame, so it holds a still pose; + FRAME adds more.' : '';
+      say(`Saved “${clip.name}”, ticked for export: EXPORT saves it in the GLB.${still}${kept ? '' : ' (The browser is out of space, so it will be gone after a reload.)'}`);
     },
   })[id]?.();
 }
@@ -478,7 +531,7 @@ addEventListener('drop', (e) => {
   if (f) openFile(f);
 });
 $('export').addEventListener('click', () => {
-  if (S.step === 'animate' && S.rigged) exportGLB();
+  if ((S.step === 'animate' || S.step === 'pose') && S.rigged) press('export');
   else say('Fit a skeleton and go to 4 ANIMATE first.');
 });
 addEventListener('keydown', (e) => {
@@ -524,6 +577,7 @@ let needPlace = false;
 function placeXR(frame) {
   const pose = frame.getViewerPose(renderer.xr.getReferenceSpace());
   if (!pose) return false;
+  resetDolly(dolly); // back to your real place and size
   const p = pose.transform.position, q = pose.transform.orientation;
   const eye = new THREE.Vector3(p.x, p.y, p.z);
   const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(new THREE.Quaternion(q.x, q.y, q.z, q.w));
@@ -545,7 +599,8 @@ function placeXR(frame) {
   return true;
 }
 
-// Model and panel back in front of you, wherever you'd put the panel.
+// Model and panel back in front of you (and the view back to life size),
+// wherever you'd put the panel.
 function recenter() {
   panelGrab.moved = false;
   needPlace = true;
@@ -561,7 +616,7 @@ const fitGrab = {
   begin: (hm) => S.editRig.pushUndo(),
   drag: (drag, p) => S.editRig.moveJoint(drag.hm.bone, p),
   end: () => S.version++,
-  update: (dt, grabbed, hovered) => S.view.update(dt, grabbed, hovered, JOINT_R),
+  update: (dt, grabbed, hovered) => S.view.update(dt, grabbed, hovered, JOINT_R * you()),
 };
 const poseGrab = {
   nearest: (p, r) => S.poser.nearest(p, r),
@@ -572,7 +627,7 @@ const poseGrab = {
   },
   drag: (drag, p) => S.poser.drag(drag.d, p),
   end: () => S.poser.commit(),
-  update: (dt, grabbed, hovered) => S.poser.update(dt, grabbed, hovered, JOINT_R),
+  update: (dt, grabbed, hovered) => S.poser.update(dt, grabbed, hovered, JOINT_R * you(), you()),
 };
 const grabber = () => (S.step === 'fit' && S.view ? fitGrab : S.step === 'pose' && S.poser ? poseGrab : null);
 
@@ -589,7 +644,7 @@ const wasPinching = new Map();
 const pinchStart = new Map(); // hand id → { t, p, used }
 const pokeState = new Map();
 const local = new THREE.Vector3();
-let sceneGrab = null;
+let navGrab = null;
 let twistAcc = 0, twistHand = null;
 let fistsHeld = 0;
 
@@ -627,13 +682,13 @@ function updateHands(hands, dt, now) {
 
     if (start) pinchStart.set(h.id, { t: now, p: h.pinchPoint.clone(), used: onPanel });
     const ps = pinchStart.get(h.id);
-    if (ps && h.pinch && ps.p.distanceTo(h.pinchPoint) > TAP_MOVE) ps.used = true;
+    if (ps && h.pinch && ps.p.distanceTo(h.pinchPoint) > TAP_MOVE * you()) ps.used = true;
 
     // Pinch a handle to drag it (unless the other hand is grabbing the scene).
     if (g) {
       const otherFree = hands.some((o) => o !== h && o.kind !== 'mouse' && o.pinch && !drags.has(o.id));
       if (start && !onPanel && !otherFree) {
-        const hm = g.nearest(h.pinchPoint, GRAB_RADIUS);
+        const hm = g.nearest(h.pinchPoint, GRAB_RADIUS * you());
         if (hm) {
           drags.set(h.id, beginDrag(g, hm, h.pinchPoint));
           ps.used = true;
@@ -641,7 +696,7 @@ function updateHands(hands, dt, now) {
       }
       const d = drags.get(h.id);
       if (d && h.pinch) d.g.drag(d, h.pinchPoint);
-      const near = d?.hm || (!sceneGrab && !h.pinch && g.nearest(h.pinchPoint, GRAB_RADIUS));
+      const near = d?.hm || (!navGrab && !h.pinch && g.nearest(h.pinchPoint, GRAB_RADIUS * you()));
       if (near) hovered.add(near);
     }
 
@@ -650,7 +705,7 @@ function updateHands(hands, dt, now) {
       if (d) {
         drags.delete(h.id);
         endDrag(d);
-      } else if (ps && !ps.used && !sceneGrab && now - ps.t < TAP_TIME) {
+      } else if (ps && !ps.used && !navGrab && now - ps.t < TAP_TIME) {
         // A quick pinch plays and pauses.
         if (S.step === 'animate') press('pause');
         else if (S.step === 'pose') press('p:play');
@@ -670,21 +725,23 @@ function updateHands(hands, dt, now) {
     g.update(dt, new Set([...[...drags.values()].map((d) => d.hm), ...(mouseDrag ? [mouseDrag.hm] : [])]), hovered);
   }
 
-  updateSceneGrab(hands);
+  updateView(hands);
   updateFists(hands, dt);
 }
 
-// Pinch empty space with both hands: move, scale and turn the stage.
-function updateSceneGrab(hands) {
+// Pinch empty space with both hands to look around: move your view, pull
+// apart / push together to zoom, turn your hands to turn the view. It only
+// moves the camera; nothing in the scene changes.
+function updateView(hands) {
   const free = hands.filter((h) => h.kind !== 'mouse' && h.pinch && !drags.has(h.id));
   if (free.length < 2) {
-    sceneGrab = null;
+    navGrab = null;
     return;
   }
   for (const h of free) if (pinchStart.get(h.id)) pinchStart.get(h.id).used = true;
-  const [a, b] = [free[0].pinchPoint, free[1].pinchPoint];
-  sceneGrab ??= new SceneGrab(stage, a, b, { min: S.baseScale * 0.15, max: S.baseScale * 8 });
-  sceneGrab.update(a, b);
+  const [a, b] = [free[0].realPinch, free[1].realPinch];
+  navGrab ??= new NavGrab(dolly, a, b, { min: 0.1, max: 10 });
+  navGrab.update(a, b);
 }
 
 // One fist + twist: resize the skeleton (fit), scroll the clips (animate) or
@@ -845,6 +902,6 @@ renderer.setAnimationLoop((time, frame) => {
   S.rigged?.tick(dt);
   panel.set(panelState());
   panel.draw();
-  handsView.update(input.hands);
+  handsView.update(input.hands, you());
   renderer.render(scene, camera);
 });

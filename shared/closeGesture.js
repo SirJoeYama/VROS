@@ -36,11 +36,12 @@ export class CloseGesture {
 
   update(hands, dt, viewer) {
     if (this.closing) return;
+    const k = viewer.getWorldScale(this._eye).x; // your size in the world (zoomed views)
     const left = hands.find((h) => h.kind === 'hand' && h.handedness === 'left');
     const right = hands.find((h) => h.kind === 'hand' && h.handedness === 'right');
     const pressed =
       !!left && !!right && !left.fist && !right.fist &&
-      left.palmCenter.distanceTo(right.palmCenter) < NEAR &&
+      left.palmCenter.distanceTo(right.palmCenter) < NEAR * k &&
       left.palmNormal.dot(right.palmNormal) < FACING;
 
     this.hold = pressed ? this.hold + dt : Math.max(0, this.hold - dt * 2);
@@ -51,6 +52,7 @@ export class CloseGesture {
       if (pressed) this._mid.copy(left.palmCenter).add(right.palmCenter).multiplyScalar(0.5);
       this.ring.position.copy(this._mid);
       this.ring.lookAt(viewer.getWorldPosition(this._eye));
+      this.ring.scale.setScalar(k);
       this.ring.geometry.setDrawRange(0, Math.max(2, Math.round(p * SEGMENTS) + 1));
       this.ring.material.opacity = 0.4 + 0.6 * p;
     }

@@ -42,8 +42,11 @@ export class PanelGrab {
   update(hands, dt, viewer) {
     const used = new Set();
     const gripAt = this.grip.getWorldPosition(new THREE.Vector3());
+    // Reach in real terms: your size in the world, times how much bigger
+    // than normal the panel has been made.
+    const you = viewer.getWorldScale(_a).x;
     const scale = this.target.getWorldScale(_a).x;
-    const reach = GRAB_RADIUS * Math.max(1, scale * 0.7);
+    const reach = GRAB_RADIUS * you * Math.max(1, (scale / you) * 0.7);
     const near = { bar: false, grip: false };
 
     for (const h of hands) {

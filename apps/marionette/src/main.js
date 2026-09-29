@@ -7,7 +7,7 @@ import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { Rig, HANDLES } from './rig.js';
 import { Timeline, TimelinePanel, PANEL_W, PANEL_H } from './timeline.js';
-import { SceneGrab } from '../../../shared/sceneGrab.js';
+import { NavGrab, resetDolly } from '../../../shared/navGrab.js';
 import { PanelGrab } from '../../../shared/panelGrab.js';
 
 const BG = new THREE.Color(0x04050a);
@@ -30,6 +30,13 @@ const sun = new THREE.DirectionalLight(0xffffff, 1.4);
 sun.position.set(0.5, 2, 1);
 scene.add(sun);
 const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.01, 50);
+// The camera sits in a "dolly": grabbing empty space with both hands moves,
+// turns and scales the dolly (your view), never the puppet. The timeline
+// lives in it too, so it stays with you.
+const dolly = new THREE.Group();
+dolly.add(camera);
+scene.add(dolly);
+const you = () => dolly.scale.x; // your size in the world: real distances get multiplied by it
 
 // ---------- stage, puppet, onion skins, timeline ----------
 const stage = new THREE.Group();
@@ -49,15 +56,16 @@ const panel = new TimelinePanel(timeline, (pose) => {
   measure.setPose(pose);
   return measure.joints();
 });
-// The timeline sits on a "desk" that follows the stage around but keeps its
-// size when you scale the scene, so it stays readable and pokeable.
+// The timeline sits on a "desk" in front of the stage. On the desktop it
+// follows the stage (and keeps its size when you scale it); in XR it's put
+// in front of the stage when you enter or recenter, then stays with you.
 const desk = new THREE.Group();
 panel.mesh.rotation.x = -0.75; // tilted up toward your eyes
 desk.add(panel.mesh);
-scene.add(desk);
+dolly.add(desk);
 // Pinch the bar under the timeline to carry it somewhere else, or its corner
 // to resize it. Once carried it stays put, until you recenter.
-const panelGrab = new PanelGrab(panel.mesh, panel.mesh, PANEL_W, PANEL_H, { detach: scene });
+const panelGrab = new PanelGrab(panel.mesh, panel.mesh, PANEL_W, PANEL_H, { detach: dolly });
 function dockPanel() {
   if (panel.mesh.parent === desk) return;
   desk.add(panel.mesh);
@@ -105,6 +113,7 @@ showFrame();
 const handsView = new HandsView();
 scene.add(handsView.points);
 const input = new Input(renderer, camera);
+input.origin = dolly; // tracked hands come in world space, wherever the view has gone
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
 // Peace sign held a second: left hand undo, right hand redo.
@@ -137,10 +146,12 @@ function placeXR(frame) {
   fwd.y = 0;
   if (fwd.lengthSq() < 1e-4) fwd.set(0, 0, -1);
   fwd.normalize();
+  resetDolly(dolly); // back to your real place and size
   dockPanel();
   stage.position.set(p.x + fwd.x * 0.5, p.y - 0.55, p.z + fwd.z * 0.5);
   stage.lookAt(p.x, stage.position.y, p.z);
   stage.updateMatrixWorld(true);
+  placeDesk();
   return true;
 }
 
@@ -191,7 +202,7 @@ const tmp = new THREE.Vector3(), local = new THREE.Vector3();
 const raycaster = new THREE.Raycaster();
 const plane = new THREE.Plane();
 
-const grabRadius = () => GRAB_RADIUS * THREE.MathUtils.clamp(stage.scale.x, 0.6, 2);
+const grabRadius = () => GRAB_RADIUS * THREE.MathUtils.clamp(stage.scale.x, 0.6, 2) * you();
 
 const _up = new THREE.Vector3();
 // Distance from a point to a handle; the floor ring counts anywhere along its rim.
@@ -203,7 +214,7 @@ function handleDistance(hm, point) {
   const rel = point.clone().sub(tmp);
   const height = rel.dot(_up);
   const radial = rel.addScaledVector(_up, -height).length();
-  return Math.hypot(radial - RING_R * k, height);
+  return Math.hypot(radial - RING_R * k * you(), height);
 }
 
 function nearestHandle(point, max) {
@@ -289,7 +300,7 @@ function updatePointers(hands, dt) {
       }
       const d = drags.get(h.id);
       if (d && h.pinch) rig.drag(d.drag, h.pinchPoint);
-      const near = d?.hm || (!sceneGrab && nearestHandle(h.pinchPoint, grabRadius() * 1.4));
+      const near = d?.hm || (!navGrab && nearestHandle(h.pinchPoint, grabRadius() * 1.4));
       if (near) hover.add(near);
 
       // Poke the timeline with an index finger (not while holding a handle).
@@ -325,28 +336,33 @@ function updatePointers(hands, dt) {
     if (hm.h.type === 'move') hm.m.quaternion.copy(stage.quaternion).multiply(FLAT);
     const target = grabbing.has(hm) ? 1 : hover.has(hm) ? 0.6 : 0;
     hm.hover += (target - hm.hover) * Math.min(1, dt * 14);
-    hm.m.scale.setScalar(k * (1 + hm.hover * 0.6));
+    hm.m.scale.setScalar(k * you() * (1 + hm.hover * 0.6));
     hm.m.material.opacity = 0.55 + hm.hover * 0.45;
     hm.m.visible = !timeline.playing;
   }
 }
 
 // ---------- moving the whole scene ----------
-// Pinch empty space with both hands: move your hands to move the scene, pull
-// them apart or together to scale it, turn them to turn it.
-let sceneGrab = null;
-function updateSceneGrab(hands) {
+// Pinch empty space with both hands to look around: move your view, pull
+// apart / push together to zoom, turn your hands to turn the view. It only
+// moves the camera; the puppet and the stage don't change.
+let navGrab = null, fistsHeld = 0;
+function updateView(hands, dt) {
+  // Two fists held for a second: back in front of the stage, at life size.
+  const fists = hands.filter((h) => h.kind === 'hand' && h.fist).length;
+  fistsHeld = fists === 2 ? fistsHeld + dt : 0;
+  if (fistsHeld > 1) {
+    fistsHeld = -1e9; // once per hold
+    needPlace = true;
+  }
   const free = hands.filter((h) => h.kind !== 'mouse' && h.pinch && !drags.has(h.id));
   if (free.length < 2) {
-    sceneGrab = null;
+    navGrab = null;
     return;
   }
-  const [a, b] = [free[0].pinchPoint, free[1].pinchPoint];
-  if (!sceneGrab) {
-    timeline.pause();
-    sceneGrab = new SceneGrab(stage, a, b);
-  }
-  sceneGrab.update(a, b);
+  const [a, b] = [free[0].realPinch, free[1].realPinch];
+  navGrab ??= new NavGrab(dolly, a, b, { min: 0.1, max: 10 });
+  navGrab.update(a, b);
 }
 
 // Desktop: the mouse wheel scales the scene.
@@ -410,12 +426,12 @@ renderer.setAnimationLoop((time, frame) => {
   const peace = undoGesture.update(input.hands, dt, viewer);
   const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
   const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && !carrying.has(h.id));
-  updateSceneGrab(hands);
+  updateView(hands, dt);
   wheelZoom();
-  placeDesk();
+  if (!renderer.xr.isPresenting) placeDesk();
   updatePointers(hands, dt);
   timeline.tick(dt);
   panel.draw();
-  handsView.update(input.hands);
+  handsView.update(input.hands, you());
   renderer.render(scene, camera);
 });
