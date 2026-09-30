@@ -8,11 +8,11 @@ It runs as a WebXR page in the Quest Browser, with passthrough when it's availab
 
 Opening the site shows a start screen with an icon for each app. Tap one to launch it; each app has a **← Home** link to come back.
 
-**In XR:** tap **Enter** on the start screen and the app icons float in an arc in front of you, with the time above. Poke an icon with your index finger to open it (with controllers, pull the trigger on it). Palms together on the home screen leaves XR.
+**In XR:** tap **Enter** on the start screen and the app icons float in an arc in front of you, with the time above. Poke an icon with your index finger to open it (with controllers, pull the trigger on it). A right-hand thumbs down on the home screen leaves XR.
 
 Moving between the home screen and apps keeps you in the headset when the browser supports WebXR navigation (Quest Browser does): the next page re-enters XR on its own. Otherwise you land on the page and tap **Enter** again.
 
-**Close an app:** press both palms together in front of you (prayer pose) and hold for about a second. A ring fills up between your hands; when it closes, the app exits and you're back on the home screen. Works in every app.
+**Close an app:** give a thumbs down with your **right hand** (fingers curled, thumb pointing at the floor) and hold it for about a second. A ring fills up around your fist; when it closes, the app exits and you're back on the home screen. Works in every app. A hand with its thumb stuck out (thumbs up or down) doesn't count as a fist, so it never sets off the fist gestures (Cinema's jog dial, resizing in Rigger and Plume, Galaxies' stillness, two-fist recenter); make those with your thumb tucked in.
 
 **Undo and redo, everywhere:** make a peace sign (index and middle fingers up in a V, the others curled) and hold it for a second. With the **left hand** it undoes, with the **right hand** it redoes; keep holding and it steps again about every half second. A ring fills around your hand while you hold, and a label says what happened ("Undo", "Nothing to undo", …). Plume undoes strokes, erasing and frame and layer changes; Scribe undoes text; Marionette and Rigger's Pose step undo poses and frame changes; Rigger's Fit step undoes skeleton edits. The other apps have nothing to undo and just say so.
 
@@ -211,7 +211,7 @@ shared/             used by the home screen and every app
   input.js          hands / controllers / mouse → unified gesture state (and trigger pressure)
   handsView.js      glowing joint visualization
   pointsMaterial.js glowing point shader
-  closeGesture.js   palms together → close the app (home: leave XR)
+  closeGesture.js   right-hand thumbs down → close the app (home: leave XR)
   fistTwist.js      fist + twist as a knob (Scribe scrolling, Cinema scrubbing)
   sceneGrab.js      two-hand pinch → move / scale / turn an object (Plume's drawing)
   navGrab.js        two-hand pinch → move / zoom / turn your view, via a camera "dolly" (Marionette, Rigger, Cinema, Pip)

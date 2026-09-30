@@ -1,15 +1,24 @@
 import * as THREE from 'three';
 
-const HOLD = 0.7; // seconds the palms must stay together
-const NEAR = 0.1; // max distance between palm centers (m)
-const FACING = -0.6; // palm normals must point at each other (dot product)
-const RING_R = 0.045, SEGMENTS = 64;
+const HOLD = 0.8; // seconds the thumbs down must be held
+const DOWN = -0.7; // how straight down the thumb must point (y of its direction)
+const RING_R = 0.06, SEGMENTS = 64;
 
-// Press both palms together (prayer pose) and hold to close the app and go
+const _t = new THREE.Vector3();
+
+// Thumbs down: the right hand's fingers curled, thumb out and pointing at
+// the floor.
+export function isThumbsDown(h) {
+  if (h.kind !== 'hand' || h.handedness !== 'right' || h.pinch || !h.thumbOut || h.curled < 3) return false;
+  const j = h.joints;
+  _t.set(j[12] - j[6], j[13] - j[7], j[14] - j[8]); // thumb: proximal joint → tip
+  return _t.normalize().y < DOWN;
+}
+
+// Give a thumbs down with the right hand and hold it to close the app and go
 // back to the home screen (or, on the home screen, to leave XR). A ring
-// between the hands fills up while you hold.
-// Brief tracking dropouts (common when hands touch) drain the hold slowly
-// instead of resetting it.
+// around the fist fills up while you hold.
+// Brief tracking dropouts drain the hold slowly instead of resetting it.
 export class CloseGesture {
   constructor(renderer, homeUrl = '../../') {
     this.renderer = renderer;
@@ -37,19 +46,15 @@ export class CloseGesture {
   update(hands, dt, viewer) {
     if (this.closing) return;
     const k = viewer.getWorldScale(this._eye).x; // your size in the world (zoomed views)
-    const left = hands.find((h) => h.kind === 'hand' && h.handedness === 'left');
-    const right = hands.find((h) => h.kind === 'hand' && h.handedness === 'right');
-    const pressed =
-      !!left && !!right && !left.fist && !right.fist &&
-      left.palmCenter.distanceTo(right.palmCenter) < NEAR * k &&
-      left.palmNormal.dot(right.palmNormal) < FACING;
+    const hand = hands.find(isThumbsDown);
+    const pressed = !!hand;
 
     this.hold = pressed ? this.hold + dt : Math.max(0, this.hold - dt * 2);
     const p = Math.min(1, this.hold / HOLD);
 
     this.ring.visible = p > 0.05;
     if (this.ring.visible) {
-      if (pressed) this._mid.copy(left.palmCenter).add(right.palmCenter).multiplyScalar(0.5);
+      if (pressed) this._mid.copy(hand.palmCenter);
       this.ring.position.copy(this._mid);
       this.ring.lookAt(viewer.getWorldPosition(this._eye));
       this.ring.scale.setScalar(k);
