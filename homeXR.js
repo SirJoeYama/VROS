@@ -168,7 +168,7 @@ export class HomeShelf {
 
 // The home screen in XR. Opening an app navigates while still in XR, so the
 // app can take the session over (WebXR navigation) and you stay in the
-// headset. Palms together leaves XR; palm toward your eyes shows help.
+// headset. A right-hand thumbs down leaves XR; palm toward your eyes shows help.
 export function startHomeXR(apps, button) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -189,7 +189,7 @@ export function startHomeXR(apps, button) {
   scene.add(closeGesture.group);
   const help = new HelpGesture('VROS', [
     ['Poke an icon', 'open that app'],
-    ['Palms together (hold)', 'close an app, or leave XR here'],
+    ['Right thumbs down (hold)', 'close an app, or leave XR here'],
     ['Palm toward your eyes (hold)', 'show or hide help'],
   ]);
   scene.add(help.group);

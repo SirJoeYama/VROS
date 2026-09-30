@@ -29,6 +29,8 @@ function makeState(id) {
     pressure: 1, // how hard: a controller's analog trigger, 1 for hands and the mouse
     open: false,
     fist: false,
+    thumbOut: false, // thumb stuck out, not tucked (thumbs up / down)
+    curled: 0, // how many of the four fingers are curled
     palmUp: false,
     pinchPoint: new THREE.Vector3(),
     realPinch: new THREE.Vector3(), // the pinch point in the room, before `origin` (see Input)
@@ -69,6 +71,15 @@ function analyzeHand(st) {
     else if (ratio < 1.2) curled++;
   }
 
+  // Thumb out: in a fist the thumb tip rests on the index and middle fingers'
+  // middle joints; stuck out (thumbs up / down) it's well away from all of
+  // them. Measured against the hand's size (wrist to middle knuckle).
+  const size = joint(st, 11, knuckle).distanceTo(wrist);
+  let near = Infinity;
+  for (const k of [7, 8, 12, 13]) near = Math.min(near, thumb.distanceTo(joint(st, k, tip)));
+  st.thumbOut = near / Math.max(1e-4, size) > 0.5;
+  st.curled = curled;
+
   // Palm frame from wrist and index/pinky knuckles. For a right hand,
   // cross(index - wrist, pinky - wrist) points out of the palm.
   const idx = joint(st, 6, new THREE.Vector3()).sub(wrist);
@@ -79,7 +90,8 @@ function analyzeHand(st) {
   joint(st, 11, st.palmCenter).add(wrist).multiplyScalar(0.5);
 
   st.open = !st.pinch && extended >= 4 && pinchDist > 0.05;
-  st.fist = !st.pinch && curled >= 4;
+  // A fist has its thumb tucked in; with the thumb out it's a thumbs up or down.
+  st.fist = !st.pinch && curled >= 4 && !st.thumbOut;
   st.palmUp = !st.pinch && extended >= 3 && st.palmNormal.y > 0.65;
 }
 
