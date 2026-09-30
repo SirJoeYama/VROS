@@ -59,6 +59,16 @@ export class Rigged {
     if (out) return out;
     const er = this.editRig;
     out = clip.clone();
+    if (clip.imported) {
+      // from a file: move its position tracks from the file's skeleton to this fit
+      for (const t of out.tracks) {
+        if (!t.name.endsWith('.position')) continue;
+        const name = t.name.slice(0, -9), i = er.bones.findIndex((b) => b.name === name);
+        if (i >= 0) retargetPosition(t, er, i, clip.sourceRest?.[name]);
+      }
+      this.prepared.set(clip, out);
+      return out;
+    }
     for (const t of out.tracks) {
       if (!t.name.endsWith('.position')) continue;
       const i = er.bones.findIndex((b) => b.name === t.name.slice(0, -9));
@@ -197,6 +207,88 @@ export function loadLibrary(rig, boneNames) {
   p.catch(() => libraries.delete(rig.id));
   libraries.set(rig.id, p);
   return p;
+}
+
+// Animations from a GLB/GLTF file (one exported from Rigger or Mesh2Motion,
+// or any file whose bones have the same names). Tracks are matched to our
+// bones by name; a clip is only taken if at least half of its rotation
+// tracks find a bone. Rotations carry over as they are. Position tracks are
+// kept only for the tracking bone (hips) and, on root-motion clips, the
+// root, and are moved from the file's skeleton to ours when played or
+// exported (Rigged.prepare): their offset from the file's rest position,
+// scaled by how the two skeletons compare, so they follow later re-fits.
+// Files without that bone just get the template treatment, like library clips.
+// `taken`: names already in use, so imported ones get unique names.
+// Returns { clips, rejected: [{ name, matched, total }] }.
+export async function importAnimations(file, rigged, taken = new Set()) {
+  const url = URL.createObjectURL(file);
+  let gltf;
+  try {
+    gltf = await loadGLTF(url);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+  if (!gltf.animations?.length) throw new Error(`${file.name} has no animations.`);
+  const er = rigged.editRig;
+  const ours = new Map(er.bones.map((b, i) => [b.name, i]));
+  const theirs = new Map();
+  gltf.scene.traverse((o) => o.name && !theirs.has(o.name) && theirs.set(o.name, o));
+  const track = er.trackBone.name;
+  const clips = [], rejected = [];
+  const rest = (name) => theirs.get(name)?.position?.toArray() || null;
+  for (const clip of gltf.animations) {
+    let total = 0, matched = 0;
+    const tracks = [], sourceRest = {};
+    for (const t of clip.tracks) {
+      const dot = t.name.lastIndexOf('.');
+      const node = t.name.slice(0, dot), prop = t.name.slice(dot + 1);
+      if (prop === 'quaternion') total++;
+      const i = ours.get(node);
+      if (i === undefined) continue;
+      if (prop === 'quaternion') {
+        matched++;
+        tracks.push(t.clone());
+      } else if (prop === 'position' && (node === track || (node === 'root' && /[_ ]?rm$/i.test(clip.name)))) {
+        tracks.push(t.clone());
+        sourceRest[node] = rest(node);
+      }
+    }
+    if (matched < 3 || matched < total / 2) {
+      rejected.push({ name: clip.name, matched, total });
+      continue;
+    }
+    // a clash with a library or saved clip becomes "Jog (imported)", then "(imported 2)"…
+    const base = clip.name || 'Animation';
+    let name = base;
+    for (let k = 1; taken.has(name); k++) name = `${base} (imported${k > 1 ? ' ' + k : ''})`;
+    taken.add(name);
+    const out = new THREE.AnimationClip(name, clip.duration, tracks);
+    out.imported = true;
+    out.sourceRest = sourceRest; // the file's rest positions, { bone: [x, y, z] | null }
+    clips.push(out);
+  }
+  return { clips, rejected };
+}
+
+// `src`: the file's rest position for this bone, [x, y, z], or null.
+function retargetPosition(t, er, i, src) {
+  const now = er.bones[i].position;
+  const v = (t.values = t.values.slice());
+  const from = src && new THREE.Vector3().fromArray(src);
+  if (from && from.lengthSq() > 1e-12) {
+    const k = now.lengthSq() > 1e-12 ? now.length() / from.length() : 1;
+    for (let j = 0; j < v.length; j += 3) {
+      v[j] = now.x + (v[j] - from.x) * k;
+      v[j + 1] = now.y + (v[j + 1] - from.y) * k;
+      v[j + 2] = now.z + (v[j + 2] - from.z) * k;
+    }
+  } else {
+    // no skeleton in the file: assume it was made for the template, like the library
+    const tpl = er.template.pos[i], s = er.scale;
+    const off = [now.x - tpl.x * s, now.y - tpl.y * s, now.z - tpl.z * s];
+    for (let j = 0; j < v.length; j++) v[j] = v[j] * s + off[j % 3];
+  }
+  return t;
 }
 
 export function download(buffer, name) {

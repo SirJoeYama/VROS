@@ -121,7 +121,8 @@ export class Panel {
     const n = s.actions.length;
     if (n) {
       const aw = (CW - PAD * 2 - (n - 1) * 12) / n;
-      s.actions.forEach((a, k) => this._button(a.id, PAD + k * (aw + 12), ACT_Y, aw, ACT_H, a.label, { on: a.on, off: a.off, size: 25, strong: a.strong }));
+      const size = n > 6 ? 20 : n > 5 ? 22 : 25; // smaller text when the row is crowded
+      s.actions.forEach((a, k) => this._button(a.id, PAD + k * (aw + 12), ACT_Y, aw, ACT_H, a.label, { on: a.on, off: a.off, size, strong: a.strong }));
     }
     this.texture.needsUpdate = true;
   }

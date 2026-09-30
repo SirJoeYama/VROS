@@ -7,6 +7,7 @@ import { HelpGesture } from '../../../shared/helpGesture.js';
 import { FistTwist } from '../../../shared/fistTwist.js';
 import { SceneGrab } from '../../../shared/sceneGrab.js';
 import { PanelGrab } from '../../../shared/panelGrab.js';
+import { PalmDock } from '../../../shared/palmDock.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { Doc, saveDoc, loadDoc } from './doc.js';
 import { View } from './view.js';
@@ -53,6 +54,10 @@ const desk = new THREE.Group();
 desk.add(panel.mesh);
 scene.add(desk);
 const panelGrab = new PanelGrab(desk, panel.mesh, PANEL_W, PANEL_H);
+// Palm up for a second: the panel comes to your hand (like Galaxies' dock),
+// a painter's palette you hold while you paint with the other hand.
+const palmDock = new PalmDock(desk, panel.mesh, PANEL_H, { busy: () => panelGrab.dragging, onMove: () => (panelGrab.moved = true) });
+scene.add(palmDock.group);
 
 const handsView = new HandsView();
 scene.add(handsView.points);
@@ -241,6 +246,7 @@ function placeXR(frame) {
   return true;
 }
 function recenter() {
+  palmDock.release();
   panelGrab.moved = false;
   needPlace = true;
 }
@@ -541,8 +547,9 @@ renderer.setAnimationLoop((time, frame) => {
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
   const peace = undoGesture.update(input.hands, dt, viewer);
-  const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
-  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && !carrying.has(h.id));
+  const palmHand = palmDock.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
+  const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand), dt, viewer);
+  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id));
   updateHands(hands, dt, now);
   wheelZoom();
 
