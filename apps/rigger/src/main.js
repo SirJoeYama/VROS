@@ -7,11 +7,13 @@ import { HelpGesture } from '../../../shared/helpGesture.js';
 import { FistTwist } from '../../../shared/fistTwist.js';
 import { NavGrab, resetDolly } from '../../../shared/navGrab.js';
 import { PanelGrab } from '../../../shared/panelGrab.js';
+import { PalmDock } from '../../../shared/palmDock.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { RIGS, rigUrl, modelUrl } from './rigs.js';
 import { loadModel, loadGLTF } from './model.js';
 import { EditRig, SkeletonView } from './skeleton.js';
-import { Rigged, loadLibrary, download } from './rigged.js';
+import { Rigged, loadLibrary, download, importAnimations } from './rigged.js';
+import * as store from './store.js';
 import { Poser } from './pose.js';
 import { Panel, PANEL_W, PANEL_H } from './panel.js';
 
@@ -69,6 +71,9 @@ dolly.add(desk);
 // Pinch the bar under the panel to carry it, or its corner to resize it. A
 // panel you've placed stays there until you recenter.
 const panelGrab = new PanelGrab(desk, panel.mesh, PANEL_W, PANEL_H);
+// Palm up for a second: the panel comes to your hand (like Galaxies' dock).
+const palmDock = new PalmDock(desk, panel.mesh, PANEL_H, { busy: () => panelGrab.dragging, onMove: () => (panelGrab.moved = true) });
+scene.add(palmDock.group);
 
 const handsView = new HandsView();
 scene.add(handsView.points);
@@ -100,6 +105,7 @@ const S = {
   riggedVersion: -1,
   clips: null, // library clips for the current rig, once loaded
   custom: [], // clips made in 5 POSE
+  imported: [], // clips imported from GLB files
   chosen: new Set(), // clip names to export
   poser: null, // 5 POSE: frames and pose handles on the rigged model
   lastClip: null, // { clip, time } last played in 4 ANIMATE, for CLIP POSE
@@ -179,6 +185,7 @@ function clearRig() {
   S.view = S.editRig = S.rigged = S.poser = S.clips = S.lastClip = null;
   S.rigDef = null;
   S.custom = [];
+  S.imported = [];
   S.chosen.clear();
   drags.clear();
 }
@@ -213,6 +220,7 @@ async function skin() {
     S.poser.group.visible = false;
     scene.add(S.poser.group);
     restoreClips();
+    restoreImported();
     S.riggedVersion = S.version;
     ok = true;
   });
@@ -252,7 +260,7 @@ async function busy(text, fn) {
   }
 }
 
-const allClips = () => [...S.custom, ...(S.clips || [])];
+const allClips = () => [...S.custom, ...S.imported, ...(S.clips || [])];
 
 // Clips saved in 5 POSE are kept in the browser for each skeleton type (as
 // their frames), so they survive reloads, closing the app and re-skinning.
@@ -272,6 +280,44 @@ function storeClips(rig, list) {
     return false;
   }
 }
+// Imported clips are kept in IndexedDB (they're too big for localStorage),
+// also per skeleton type.
+const importedKey = (rig) => `clips.${rig.id}`;
+async function restoreImported() {
+  const rig = S.rigDef;
+  try {
+    const list = (await store.get(importedKey(rig))) || [];
+    if (S.rigDef !== rig) return; // the skeleton changed meanwhile
+    const first = !S.imported.length;
+    S.imported = list.filter((e) => e?.clip).map(({ clip, sourceRest }) => {
+      const c = THREE.AnimationClip.parse(clip);
+      c.imported = true;
+      c.sourceRest = sourceRest;
+      return c;
+    });
+    if (first) for (const c of S.imported) S.chosen.add(c.name);
+  } catch (err) {
+    console.warn('Could not restore imported clips', err);
+  }
+}
+const saveImported = () => store.set(importedKey(S.rigDef), S.imported.map((c) => ({ clip: THREE.AnimationClip.toJSON(c), sourceRest: c.sourceRest })));
+
+async function importFile(file) {
+  if (!S.rigged) return say('Skin a model first (3 FIT → SKIN & ANIMATE), then import its animations.');
+  await busy(`Importing animations from ${file.name}…`, async () => {
+    const { clips, rejected } = await importAnimations(file, S.rigged, new Set(allClips().map((c) => c.name)));
+    const why = rejected.length ? ` ${rejected.length} didn't fit the ${S.rigDef.name.toLowerCase()} skeleton (e.g. “${rejected[0].name}”: ${rejected[0].matched} of ${rejected[0].total} bones match).` : '';
+    if (!clips.length) return say(`Nothing imported: no animation in ${file.name} fits the ${S.rigDef.name.toLowerCase()} skeleton.${why}`);
+    S.imported.push(...clips);
+    for (const c of clips) S.chosen.add(c.name);
+    let kept = true;
+    await saveImported().catch(() => (kept = false));
+    if (S.step !== 'animate') go('animate');
+    S.rigged.play(clips[0]);
+    say(`Imported ${clips.length} animation${clips.length === 1 ? '' : 's'} from ${file.name}, ticked for export.${why}${kept ? '' : ' (Couldn’t keep them in the browser: they’ll be gone after a reload.)'}`);
+  });
+}
+
 function restoreClips() {
   const first = !S.custom.length;
   S.custom = savedClips(S.rigDef).map((c) => S.poser.clipFrom(c));
@@ -390,16 +436,17 @@ function panelState() {
   const r = S.rigged, n = S.chosen.size, clips = allClips();
   return {
     ...base,
-    items: clips.map((c) => ({ id: `clip:${c.name}`, label: (c.custom ? '★ ' : '') + c.name.replace(/_/g, ' '), on: r?.clip === c, check: S.chosen.has(c.name) })),
+    items: clips.map((c) => ({ id: `clip:${c.name}`, label: (c.imported ? '⤓ ' : c.custom ? '★ ' : '') + c.name.replace(/_/g, ' '), on: r?.clip === c, check: S.chosen.has(c.name) })),
     empty: 'loading animations…',
     status: status(S.note || (r?.clip ? `${r.clip.name.replace(/_/g, ' ')}${r.paused ? ' (paused)' : ''} · tick ✓ the clips to export` : '')),
     actions: [
       { id: 'step:fit', label: '‹  FIT' },
-      { id: 'pause', label: r?.paused ? '▶  PLAY' : '❚❚  PAUSE' },
+      { id: 'pause', label: r?.paused ? '▶ PLAY' : '❚❚ PAUSE' },
       { id: 'weights', label: 'WEIGHTS', on: r?.showWeights },
       { id: 'all', label: n && n === clips.length ? 'NONE' : 'ALL' },
-      { id: 'removeClip', label: 'REMOVE ★', off: !r?.clip?.custom },
-      { id: 'export', label: `EXPORT GLB (${n})`, strong: true },
+      { id: 'removeClip', label: 'REMOVE', off: !r?.clip?.custom && !r?.clip?.imported },
+      { id: 'import', label: 'IMPORT' },
+      { id: 'export', label: `EXPORT (${n})`, strong: true },
     ],
   };
 }
@@ -454,11 +501,16 @@ async function press(id) {
       S.poser?.stop();
       return S.rigged && exportGLB();
     },
-    // Remove a clip made in 5 POSE (the one playing).
+    // The browser can't show a file picker inside XR.
+    import: () => (renderer.xr.isPresenting ? say('To import animations, leave XR and use “Import animations…” in window mode.') : $('animfile').click()),
+    // Remove a clip made in 5 POSE or imported (the one playing).
     removeClip: () => {
       const c = S.rigged?.clip;
-      if (!c?.custom) return;
-      storeClips(S.rigDef, savedClips(S.rigDef).filter((x) => x.name !== c.name));
+      if (!c?.custom && !c?.imported) return;
+      if (c.imported) {
+        S.imported = S.imported.filter((x) => x !== c);
+        saveImported().catch(() => {});
+      } else storeClips(S.rigDef, savedClips(S.rigDef).filter((x) => x.name !== c.name));
       S.custom = S.custom.filter((x) => x !== c);
       S.chosen.delete(c.name);
       const next = S.lastClip?.clip || S.clips?.find((x) => /idle/i.test(x.name)) || S.clips?.[0];
@@ -519,6 +571,11 @@ function posePress(id) {
 }
 
 // ---------- window-mode controls ----------
+$('animfile').addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (f) importFile(f);
+});
 $('file').addEventListener('change', (e) => {
   const f = e.target.files[0];
   e.target.value = '';
@@ -602,6 +659,7 @@ function placeXR(frame) {
 // Model and panel back in front of you (and the view back to life size),
 // wherever you'd put the panel.
 function recenter() {
+  palmDock.release();
   panelGrab.moved = false;
   needPlace = true;
 }
@@ -895,8 +953,9 @@ renderer.setAnimationLoop((time, frame) => {
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
   const peace = undoGesture.update(input.hands, dt, viewer);
-  const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
-  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && !carrying.has(h.id));
+  const palmHand = palmDock.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
+  const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand), dt, viewer);
+  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id));
   updateHands(hands, dt, now);
   wheelZoom();
   S.rigged?.tick(dt);

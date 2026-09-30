@@ -9,6 +9,7 @@ import { Rig, HANDLES } from './rig.js';
 import { Timeline, TimelinePanel, PANEL_W, PANEL_H } from './timeline.js';
 import { NavGrab, resetDolly } from '../../../shared/navGrab.js';
 import { PanelGrab } from '../../../shared/panelGrab.js';
+import { PalmDock } from '../../../shared/palmDock.js';
 
 const BG = new THREE.Color(0x04050a);
 const GRAB_RADIUS = 0.035; // how close a pinch must be to a handle
@@ -66,7 +67,11 @@ dolly.add(desk);
 // Pinch the bar under the timeline to carry it somewhere else, or its corner
 // to resize it. Once carried it stays put, until you recenter.
 const panelGrab = new PanelGrab(panel.mesh, panel.mesh, PANEL_W, PANEL_H, { detach: dolly });
+// Palm up for a second: the timeline comes to your hand (like Galaxies' dock).
+const palmDock = new PalmDock(panel.mesh, panel.mesh, PANEL_H, { detach: dolly, busy: () => panelGrab.dragging });
+scene.add(palmDock.group);
 function dockPanel() {
+  palmDock.release();
   if (panel.mesh.parent === desk) return;
   desk.add(panel.mesh);
   panel.mesh.rotation.set(-0.75, 0, 0);
@@ -424,8 +429,9 @@ renderer.setAnimationLoop((time, frame) => {
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
   const peace = undoGesture.update(input.hands, dt, viewer);
-  const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
-  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && !carrying.has(h.id));
+  const palmHand = palmDock.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
+  const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand), dt, viewer);
+  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id));
   updateView(hands, dt);
   wheelZoom();
   if (!renderer.xr.isPresenting) placeDesk();

@@ -27,6 +27,9 @@
       <label class="file">Open a model…<input id="file" type="file" accept=".glb,.gltf,.fbx,.obj" /></label>
       <button id="export">Export GLB</button>
     </div>
+    <div class="row">
+      <label class="file">Import animations…<input id="animfile" type="file" accept=".glb,.gltf" /></label>
+    </div>
     <p id="status"></p>
     <dl class="legend">
       <dt>Poke the panel</dt><dd>1 MODEL → 2 SKELETON → 3 FIT → 4 ANIMATE → 5 POSE; pick, toggle, play</dd>
@@ -38,9 +41,11 @@
       <dt>Fist + twist</dt><dd>fit: resize the skeleton · animate: scroll the clips · pose: step through frames</dd>
       <dt>Pinch (a quick tap)</dt><dd>animate, pose: play / pause</dd>
       <dt>Pinch empty space, both hands</dt><dd>look around: move your view, pull apart to zoom in, turn your hands to turn the view (the model never moves)</dd>
+      <dt>Palm up, held 1 s</dt><dd>the panel comes to your hand; poke it with the other hand · lower your palm and it stays there</dd>
       <dt>Pinch the bar under the panel</dt><dd>carry it somewhere else · pinch its corner and pull to resize</dd>
       <dt>Two fists, held 1 s</dt><dd>bring the model and panel back in front of you</dd>
       <dt>Tick ✓ next to clips</dt><dd>choose what EXPORT GLB saves</dd>
+      <dt>IMPORT (window mode)</dt><dd>bring in animations from a GLB exported before (same skeleton type); they show with ⤓</dd>
       <dt>Peace sign, held 1 s</dt><dd>left hand: undo · right hand: redo (keep holding to step again)</dd>
       <dt>Right thumbs down (hold)</dt><dd>close the app, back to home</dd>
       <dt>Palm toward your eyes (hold)</dt><dd>show or hide this help in XR</dd>
