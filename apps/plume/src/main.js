@@ -259,16 +259,23 @@ function recenter() {
 // A small sphere at each pinch showing the brush's colour and size (red and
 // see-through for the eraser).
 const cursors = new Map();
+// With the ribbon brush the cursor is a flat bar instead, lying the way the
+// ribbon will: across your hand, or across the controller, turning with it.
 function cursorFor(id) {
   let c = cursors.get(id);
   if (!c) {
-    c = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 14), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.5, depthWrite: false }));
-    c.renderOrder = 12;
-    scene.add(c);
+    const mat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide });
+    c = new THREE.Mesh(new THREE.SphereGeometry(0.5, 20, 14), mat);
+    c.bar = new THREE.Mesh(new THREE.PlaneGeometry(1, 0.2), mat);
+    for (const m of [c, c.bar]) {
+      m.renderOrder = 12;
+      scene.add(m);
+    }
     cursors.set(id, c);
   }
   return c;
 }
+const _bx = new THREE.Vector3(), _bz = new THREE.Vector3(), _by = new THREE.Vector3(), _bm = new THREE.Matrix4();
 const eraseRadius = () => Math.max(S.size * 1.5, 0.012);
 
 // ---------- hands ----------
@@ -302,7 +309,9 @@ function beginStroke(h, now) {
 
 function extendStroke(h, first = false) {
   const st = strokes.get(h.id);
-  st.smooth.lerp(h.pinchPoint, first || h.kind === 'mouse' ? 1 : 0.5); // steadies shaky hands
+  // Hands shake, so their point is steadied; the mouse and controllers are
+  // steady already, and smoothing them only made the line lag behind.
+  st.smooth.lerp(h.pinchPoint, first || h.kind !== 'hand' ? 1 : 0.5);
   const k = art.getWorldScale(tmp).x;
   const w = (S.size * h.pressure) / k;
   const p = toArt(st.smooth, new THREE.Vector3());
@@ -337,6 +346,7 @@ function eraseAt(h) {
 }
 
 function updateHands(hands, dt, now) {
+  const viewer = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera; // for the cursor's facing
   const pinching = hands.filter((h) => h.pinch);
   for (const h of hands) {
     const was = wasPinching.get(h.id), start = h.pinch && !was, end = !h.pinch && was;
@@ -399,19 +409,35 @@ function updateHands(hands, dt, now) {
 
     // cursor
     const c = cursorFor(h.id);
-    c.visible = !onPanel && !sceneGrab && h.kind !== 'mouse';
-    if (c.visible) {
-      c.position.copy(h.pinchPoint);
-      const erase = S.tool === 'erase';
-      c.scale.setScalar(erase ? eraseRadius() * 2 : Math.max(0.004, S.size * h.pressure));
+    const show = !onPanel && !sceneGrab && h.kind !== 'mouse';
+    const erase = S.tool === 'erase', ribbon = !erase && S.brush === 'ribbon';
+    c.visible = show && !ribbon;
+    c.bar.visible = show && ribbon;
+    if (show) {
+      const w = erase ? eraseRadius() * 2 : Math.max(0.004, S.size * h.pressure);
       c.material.color.copy(erase ? new THREE.Color(0xff5050) : currentColor());
       c.material.opacity = erase ? 0.25 : h.pinch ? 0.9 : 0.5;
+      if (ribbon) {
+        // the bar's long side along the ribbon's side direction, its face toward you
+        _bx.copy(h.lateral).normalize();
+        _bz.copy(viewer.getWorldPosition(_bz)).sub(h.pinchPoint);
+        _bz.addScaledVector(_bx, -_bz.dot(_bx));
+        if (_bz.lengthSq() < 1e-8) _bz.set(0, 0, 1);
+        _bz.normalize();
+        _by.crossVectors(_bz, _bx);
+        c.bar.quaternion.setFromRotationMatrix(_bm.makeBasis(_bx, _by, _bz));
+        c.bar.position.copy(h.pinchPoint);
+        c.bar.scale.set(Math.max(w, 0.008), Math.max(w, 0.008), 1);
+      } else {
+        c.position.copy(h.pinchPoint);
+        c.scale.setScalar(w);
+      }
     }
   }
   // hands that stopped being tracked
   for (const id of [...strokes.keys()]) if (!hands.some((h) => h.id === id)) endStroke(id, true);
   for (const [id, er] of [...erasing]) if (!hands.some((h) => h.id === id)) { doc.commit(er.frame, er.before); erasing.delete(id); }
-  for (const [id, c] of cursors) if (!hands.some((h) => h.id === id)) c.visible = false;
+  for (const [id, c] of cursors) if (!hands.some((h) => h.id === id)) c.visible = c.bar.visible = false;
 
   updateSceneGrab(hands);
   updateFists(hands, dt);

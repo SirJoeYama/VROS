@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 
-const HOLD = 0.5; // seconds the pose must be held to toggle help
+const HOLD = 3; // seconds the pose must be held to toggle help (long, so it doesn't pop up by accident)
+const SHOW_RING = 1; // after this long holding, a ring by the palm shows it's coming
+const RING_R = 0.035, SEGMENTS = 48;
 const PANEL_W = 0.46; // meters
 const CW = 1024, PAD = 44, COLS = 2, ICON = 64;
 const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
@@ -16,7 +18,7 @@ export const COMMON = {
   panel: ['🤏', 'Panel handles', 'carry · resize · both: turn'],
   undo: ['✌️', 'Peace sign, 1 s', 'left: undo · right: redo'],
   close: ['👎', 'Right thumbs down', 'close the app'],
-  help: ['✋', 'Palm to your eyes', 'show / hide this help'],
+  help: ['✋', 'Palm to your eyes, 3 s', 'show / hide this help'],
 };
 
 // The same things on Quest controllers, shown instead when you're holding them.
@@ -84,7 +86,21 @@ export class HelpGesture {
     );
     this.panel.renderOrder = 30;
     this.panel.visible = false;
-    this.group = this.panel;
+    // the hold ring: appears after the first second, fills until the card opens
+    const pts = [];
+    for (let i = 0; i <= SEGMENTS; i++) {
+      const a = Math.PI / 2 - (i / SEGMENTS) * Math.PI * 2;
+      pts.push(new THREE.Vector3(Math.cos(a) * RING_R, Math.sin(a) * RING_R, 0));
+    }
+    this.ring = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({ color: 0x9fb8ff, transparent: true, depthTest: false, depthWrite: false }),
+    );
+    this.ring.renderOrder = 31;
+    this.ring.visible = false;
+    this.ring.frustumCulled = false;
+    this.group = new THREE.Group();
+    this.group.add(this.panel, this.ring);
     this.open = false;
     this.hold = 0;
     this.armed = true; // the pose must end before it can toggle again
@@ -140,7 +156,7 @@ export class HelpGesture {
   hint(viewer) {
     const row = this.pads
       ? { icon: '❔', key: 'Press B', text: 'for help with this app' }
-      : { icon: '✋', key: 'Palm to your eyes', text: 'hold it for help with this app' };
+      : { icon: '✋', key: 'Palm to your eyes', text: 'hold it 3 s for help with this app' };
     this._draw('Tip', '', [row], []);
     this._place(viewer, null);
     this.hintTime = 5;
@@ -180,6 +196,17 @@ export class HelpGesture {
     } else if (!hand) {
       this.hold = 0;
       this.armed = true;
+    }
+
+    // the ring by the palm, once you've held the pose a moment
+    const p = (this.hold - SHOW_RING) / (HOLD - SHOW_RING);
+    this.ring.visible = !!hand && this.armed && p > 0;
+    if (this.ring.visible) {
+      this.ring.position.copy(hand.palmCenter);
+      this.ring.lookAt(_eye);
+      this.ring.scale.setScalar(this.k);
+      this.ring.geometry.setDrawRange(0, Math.max(2, Math.round(Math.min(1, p) * SEGMENTS) + 1));
+      this.ring.material.opacity = 0.3 + 0.5 * p;
     }
 
     if (this.hintTime > 0) this.hintTime -= dt;
