@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Input } from '../../../shared/input.js';
+import { Input, palmFacesUp } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
 import { UndoGesture } from '../../../shared/undoGesture.js';
@@ -38,6 +38,11 @@ const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.01, 5
 const dolly = new THREE.Group();
 dolly.add(camera);
 scene.add(dolly);
+// Everything you look at sits in `world`. Zooming with both hands scales the
+// world, not you: you stay life size, so things stay put in your room when
+// you move your head (scaling you made them float).
+const world = new THREE.Group();
+scene.add(world);
 const you = () => dolly.scale.x; // your size in the world: real distances get multiplied by it
 scene.add(new THREE.HemisphereLight(0xfff4f8, 0x404060, 1.6));
 const sun = new THREE.DirectionalLight(0xffffff, 2.2);
@@ -46,7 +51,7 @@ scene.add(sun);
 
 // ---------- the pet ----------
 const pet = new Pet();
-scene.add(pet.group);
+world.add(pet.group);
 const bubble = new Bubble();
 bubble.mesh.position.set(0, 0.16 + BUBBLE_H / 2, 0.01);
 pet.group.add(bubble.mesh);
@@ -318,7 +323,7 @@ function placeXR(frame) {
   fwd.y = 0;
   if (fwd.lengthSq() < 1e-4) fwd.set(0, 0, -1);
   fwd.normalize();
-  resetDolly(dolly); // back to your real place and size
+  resetDolly(dolly, world); // back to your real place and size, no zoom
   pet.group.position.set(p.x + fwd.x * 0.5, p.y - 0.2, p.z + fwd.z * 0.5);
   pet.group.lookAt(p.x, p.y - 0.2, p.z);
   pet.group.scale.setScalar(1);
@@ -353,8 +358,9 @@ function toPet(p) {
 // camera. Two fists held for a second: back in front of Pip, at life size.
 let fistsHeld = 0;
 function updateView(pinching, hands, dt) {
-  if (pinching.length >= 2) {
-    grab ??= new NavGrab(dolly, pinching[0].realPinch, pinching[1].realPinch, { min: 0.1, max: 10 });
+  // starts only with both palms up (then keeps going as your hands turn)
+  if (pinching.length >= 2 && (grab || pinching.every((h) => palmFacesUp(h)))) {
+    grab ??= new NavGrab(dolly, pinching[0].realPinch, pinching[1].realPinch, { world, min: 0.1, max: 10 });
     grab.update(pinching[0].realPinch, pinching[1].realPinch);
     for (const h of pinching) if (pinches.has(h.id)) pinches.get(h.id).cancelled = true;
   } else grab = null;
@@ -455,6 +461,7 @@ renderer.xr.addEventListener('sessionstart', () => {
   if (!brain.hasKey) say(NEEDS_KEY);
 });
 renderer.xr.addEventListener('sessionend', () => {
+  resetDolly(dolly, world);
   document.body.classList.remove('in-xr');
   scene.background = BG;
   help.hide();

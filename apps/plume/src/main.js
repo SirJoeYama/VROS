@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Input } from '../../../shared/input.js';
+import { Input, palmFacesUp } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
 import { UndoGesture } from '../../../shared/undoGesture.js';
@@ -366,10 +366,11 @@ function updateHands(hands, dt, now) {
     }
     if (h.kind === 'mouse' && start && mouseOnPanel) onPanel = true;
 
-    // Pinch: draw or erase. A second hand pinching means "grab the drawing".
+    // Pinch: draw or erase. A second hand pinching with both palms up means
+    // "grab the drawing"; palms down, both hands just paint.
     const others = pinching.filter((o) => o !== h && o.kind !== 'mouse');
     if (start && !onPanel && !(h.kind === 'mouse' && mouseOnPanel)) {
-      if (others.length && h.kind !== 'mouse') {
+      if (others.length && h.kind !== 'mouse' && palmFacesUp(h) && others.every((o) => palmFacesUp(o))) {
         // the other hand's young stroke was the start of a grab, not a line
         for (const o of others) {
           const st = strokes.get(o.id);
@@ -415,7 +416,8 @@ function updateHands(hands, dt, now) {
 // Both hands pinching (not on the panel): move, scale and turn the drawing.
 function updateSceneGrab(hands) {
   const free = hands.filter((h) => h.kind !== 'mouse' && h.pinch && !strokes.has(h.id) && !erasing.has(h.id));
-  if (free.length < 2) {
+  // starts only with both palms up (then keeps going as your hands turn)
+  if (free.length < 2 || (!sceneGrab && !free.every((h) => palmFacesUp(h)))) {
     sceneGrab = null;
     return;
   }

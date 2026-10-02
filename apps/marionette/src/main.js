@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Input } from '../../../shared/input.js';
+import { Input, palmFacesUp } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
 import { UndoGesture } from '../../../shared/undoGesture.js';
@@ -37,11 +37,16 @@ const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.01, 5
 const dolly = new THREE.Group();
 dolly.add(camera);
 scene.add(dolly);
+// Everything you look at sits in `world`. Zooming with both hands scales the
+// world, not you: you stay life size, so things stay put in your room when
+// you move your head (scaling you made them float).
+const world = new THREE.Group();
+scene.add(world);
 const you = () => dolly.scale.x; // your size in the world: real distances get multiplied by it
 
 // ---------- stage, puppet, onion skins, timeline ----------
 const stage = new THREE.Group();
-scene.add(stage);
+world.add(stage);
 const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.21, 0.025, 48), new THREE.MeshStandardMaterial({ color: 0x5a3a24, roughness: 0.8 }));
 disc.position.y = -0.0125;
 stage.add(disc);
@@ -151,7 +156,7 @@ function placeXR(frame) {
   fwd.y = 0;
   if (fwd.lengthSq() < 1e-4) fwd.set(0, 0, -1);
   fwd.normalize();
-  resetDolly(dolly); // back to your real place and size
+  resetDolly(dolly, world); // back to your real place and size, no zoom
   dockPanel();
   stage.position.set(p.x + fwd.x * 0.5, p.y - 0.55, p.z + fwd.z * 0.5);
   stage.lookAt(p.x, stage.position.y, p.z);
@@ -295,7 +300,7 @@ function updatePointers(hands, dt) {
     } else {
       // Hands and controllers pinch (trigger) near a handle to grab it. If the
       // other hand is already pinching empty space, this pinch grabs the scene.
-      const otherFree = hands.some((o) => o !== h && o.kind !== 'mouse' && o.pinch && !drags.has(o.id));
+      const otherFree = hands.some((o) => o !== h && o.kind !== 'mouse' && o.pinch && !drags.has(o.id) && palmFacesUp(o));
       if (start && !otherFree) {
         const hm = nearestHandle(h.pinchPoint, grabRadius());
         if (hm) {
@@ -361,12 +366,13 @@ function updateView(hands, dt) {
     needPlace = true;
   }
   const free = hands.filter((h) => h.kind !== 'mouse' && h.pinch && !drags.has(h.id));
-  if (free.length < 2) {
+  // starts only with both palms up (then keeps going as your hands turn)
+  if (free.length < 2 || (!navGrab && !free.every((h) => palmFacesUp(h)))) {
     navGrab = null;
     return;
   }
   const [a, b] = [free[0].realPinch, free[1].realPinch];
-  navGrab ??= new NavGrab(dolly, a, b, { min: 0.1, max: 10 });
+  navGrab ??= new NavGrab(dolly, a, b, { world, min: 0.1, max: 10 });
   navGrab.update(a, b);
 }
 
@@ -390,6 +396,7 @@ renderer.xr.addEventListener('sessionstart', () => {
   needPlace = true;
 });
 renderer.xr.addEventListener('sessionend', () => {
+  resetDolly(dolly, world);
   document.body.classList.remove('in-xr');
   scene.background = BG;
   help.hide();

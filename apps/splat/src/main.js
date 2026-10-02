@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { SparkRenderer } from '@sparkjsdev/spark';
-import { Input } from '../../../shared/input.js';
+import { Input, palmFacesUp } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
 import { UndoGesture } from '../../../shared/undoGesture.js';
@@ -43,8 +43,13 @@ dolly.add(camera);
 scene.add(dolly);
 const you = () => dolly.scale.x; // your size in the world
 
-const view = new Scene(scene);
-const measure = new Measure(view.holder);
+// Everything you look at sits in `world`. Zooming with both hands scales
+// the world, not you: you stay life size, so the splat stays put in your
+// room when you move your head (scaling you made it float).
+const world = new THREE.Group();
+scene.add(world);
+const view = new Scene(world);
+const measure = new Measure(view.holder, world);
 scene.add(measure.group);
 
 const panel = new Panel();
@@ -85,12 +90,14 @@ const say = (t) => { S.note = t; statusEl.textContent = t; };
 // ---------- view and orientation history (undo / redo) ----------
 // A snapshot is where you are (the dolly) and how the splat sits.
 const past = [], future = [];
-const snapshot = () => ({ dolly: [dolly.position.toArray(), dolly.quaternion.toArray(), dolly.scale.x], pose: view.pose });
+const snapshot = () => ({ dolly: [dolly.position.toArray(), dolly.quaternion.toArray(), dolly.scale.x], zoom: world.scale.x, pose: view.pose });
 function restore(s) {
   dolly.position.fromArray(s.dolly[0]);
   dolly.quaternion.fromArray(s.dolly[1]);
   dolly.scale.setScalar(s.dolly[2]);
   dolly.updateMatrixWorld(true);
+  world.scale.setScalar(s.zoom ?? 1);
+  world.updateMatrixWorld(true);
   view.pose = s.pose;
   savePose();
 }
@@ -167,7 +174,7 @@ $('load-url').addEventListener('click', () => {
 // you, their middle at your head. The view goes back to life size.
 let needPlace = false;
 function place(head, fwd) {
-  resetDolly(dolly);
+  resetDolly(dolly, world);
   const info = view.info;
   if (info?.object) {
     view.holder.position.copy(head).addScaledVector(fwd, 0.9);
@@ -290,7 +297,7 @@ const wasPinching = new Map();
 const pokeState = new Map();
 const local = new THREE.Vector3();
 let drag = null, dragHand = null, nav = null, twistHand = null, fistsHeld = 0;
-let lastPoint = null; // { t, before }: a measuring point just dropped, in case it was the start of a two-hand grab
+let lastPoint = null; // { hand, t, before }: a measuring point just dropped, in case its pinch becomes a two-hand grab
 const GRAB_WINDOW = 0.35; // s
 
 function panelLocal(point) {
@@ -305,6 +312,7 @@ function updateHands(hands, dt) {
     if (h.kind === 'mouse') continue;
     const was = wasPinching.get(h.id), start = h.pinch && !was;
     wasPinching.set(h.id, h.pinch);
+    if (!h.pinch && lastPoint?.hand === h.id) lastPoint = null; // that pinch was just a point
 
     // Poke the panel with an index fingertip; a controller pulls its trigger on it.
     let onPanel = false;
@@ -328,7 +336,7 @@ function updateHands(hands, dt) {
     const other = hands.some((o) => o !== h && o.kind !== 'mouse' && o.pinch);
     if (start && !onPanel && !nav && !other) {
       if (S.mode === 'measure' && view.info) {
-        lastPoint = { t: performance.now() / 1000, before: [...measure.points] };
+        lastPoint = { hand: h.id, t: performance.now() / 1000, before: [...measure.points] };
         measure.add(h.pinchPoint);
       }
       else if (!drag) {
@@ -341,13 +349,14 @@ function updateHands(hands, dt) {
 
   // Both hands pinching: move, zoom and turn the view (takes over a one-hand pull).
   const pinching = hands.filter((h) => h.kind !== 'mouse' && h.pinch);
-  if (pinching.length >= 2) {
+  // starts only with both palms up (then keeps going as your hands turn)
+  if (pinching.length >= 2 && (nav || pinching.every((h) => palmFacesUp(h)))) {
     if (!nav) {
       // the first hand's pinch was the start of this grab, not a measuring point
       if (lastPoint && performance.now() / 1000 - lastPoint.t < GRAB_WINDOW) measure.points = lastPoint.before;
       lastPoint = null;
       if (!drag) remember();
-      nav = new NavGrab(dolly, pinching[0].realPinch, pinching[1].realPinch, { min: 0.02, max: 50 });
+      nav = new NavGrab(dolly, pinching[0].realPinch, pinching[1].realPinch, { world, min: 0.02, max: 50 });
     }
     drag = null;
     nav.update(pinching[0].realPinch, pinching[1].realPinch);
@@ -407,7 +416,7 @@ el.addEventListener('pointermove', (e) => {
   if (mouse.turn) orbit(-dx * 0.006);
   else {
     // pull the world: moving the mouse right drags the world right
-    const k = 0.0015 * Math.max(0.3, camera.getWorldPosition(new THREE.Vector3()).distanceTo(view.holder.position));
+    const k = 0.0015 * Math.max(0.3, camera.getWorldPosition(new THREE.Vector3()).distanceTo(splatCenter()));
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
     const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
     dolly.position.addScaledVector(right, -dx * k).addScaledVector(up, dy * k);
@@ -418,9 +427,13 @@ el.addEventListener('pointerup', mouseUp);
 el.addEventListener('pointercancel', mouseUp);
 el.addEventListener('contextmenu', (e) => e.preventDefault());
 
+// Where the splat is in the world (its holder sits in the zoomed world group;
+// placement happens with the world at scale 1, so it's set directly).
+const splatCenter = () => view.holder.getWorldPosition(new THREE.Vector3());
+
 // Turn the view about the vertical through the splat's middle.
 function orbit(rad) {
-  const c = view.holder.position;
+  const c = splatCenter();
   const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rad);
   dolly.position.sub(c).applyQuaternion(q).add(c);
   dolly.quaternion.premultiply(q);
@@ -434,7 +447,7 @@ function wheelZoom() {
   clearTimeout(wheelTimer);
   wheelTimer = setTimeout(() => (wheelTimer = 0), 500);
   const eye = camera.getWorldPosition(new THREE.Vector3());
-  const toward = view.holder.position.clone().sub(eye);
+  const toward = splatCenter().sub(eye);
   const step = THREE.MathUtils.clamp(-input.wheel * 0.001, -0.5, 0.5) * Math.max(0.2, toward.length());
   dolly.position.addScaledVector(camera.getWorldDirection(new THREE.Vector3()), step);
   input.wheel = 0;
@@ -493,7 +506,7 @@ renderer.setAnimationLoop((time, frame) => {
     needPlace = false;
     help.hint(renderer.xr.getCamera());
   }
-  input.update(frame, dt, view.holder.position);
+  input.update(frame, dt, splatCenter());
   for (const ev of input.events) if (ev === 'recenter') resetView();
 
   const viewer = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;

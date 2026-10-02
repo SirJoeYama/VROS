@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { ParticleField } from './particles.js';
 import { APPS } from './apps.js';
-import { Input } from '../../../shared/input.js';
+import { Input, palmFacesUp } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { Launcher } from './launcher.js';
 import { TextSprite } from './text.js';
@@ -191,10 +191,11 @@ renderer.setAnimationLoop((time, frame) => {
   undoGesture.update(hands, dt, xrCam);
   const helpHand = help.update(hands, dt, xrCam);
 
-  // Two pinching hands grab the whole formation: move, scale, and turn it.
+  // Two hands pinching with palms up grab the whole formation: move, scale,
+  // and turn it. (Palms down, each pinch is its own gravity well.)
   const pinching = hands.filter((h) => h.pinch && h !== menuHand);
   F.wells.length = 0;
-  if (pinching.length >= 2) {
+  if (pinching.length >= 2 && (grab || pinching.every((h) => palmFacesUp(h)))) {
     const a = pinching[0].pinchPoint, b = pinching[1].pinchPoint;
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2, mz = (a.z + b.z) / 2;
     const dist = Math.max(0.02, a.distanceTo(b));

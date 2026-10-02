@@ -95,6 +95,14 @@ function analyzeHand(st) {
   st.palmUp = !st.pinch && extended >= 3 && st.palmNormal.y > 0.65;
 }
 
+// Palm facing up, whatever the fingers are doing (`palmUp` needs an open
+// hand). The two-hand grab only starts when both hands pinch like this, so
+// two ordinary pinches never start it by accident. Controllers have no palm,
+// so they always count.
+export function palmFacesUp(h, min = 0.4) {
+  return h.kind !== 'hand' || h.palmNormal.y > min;
+}
+
 function trackVelocity(st, pos, dt) {
   if (st._hasPrev && dt > 0) {
     _a.copy(pos).sub(st._prev).divideScalar(dt);
