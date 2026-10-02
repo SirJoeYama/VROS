@@ -31,7 +31,8 @@ export function isPeace(h, k = 1) {
 }
 
 // Undo and redo, the same in every app: hold a peace sign for a second, the
-// left hand to undo, the right to redo; keep holding to step again. A ring
+// left hand to undo, the right to redo; keep holding to step again. With
+// controllers: X (left) undoes, A (right) redoes, a press each. A ring
 // fills around the hand while you hold, and a label says what happened.
 // `undo()` / `redo()` do the work and return what to show ("Undo", "Undo:
 // stroke", …), or nothing when there was nothing to undo.
@@ -67,6 +68,13 @@ export class UndoGesture {
     viewer.getWorldPosition(_eye);
     const k = (this.k = viewer.getWorldScale(_c).x);
     const making = [];
+    for (const h of hands) {
+      if (h.kind !== 'controller') continue;
+      const kind = h.handedness === 'left' ? 'undo' : 'redo';
+      this._pads ??= {};
+      if (h.btn.a && !this._pads[h.id]) this._fire(kind, h.pinchPoint.clone().addScaledVector(_a.set(0, 1, 0), 0.03 * k));
+      this._pads[h.id] = h.btn.a;
+    }
     for (const kind of ['undo', 'redo']) {
       const side = kind === 'undo' ? 'left' : 'right';
       const h = hands.find((x) => x.handedness === side && isPeace(x, k));

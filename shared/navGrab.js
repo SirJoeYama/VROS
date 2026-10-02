@@ -73,6 +73,50 @@ export class NavDrag {
   }
 }
 
+// Thumbsticks (Quest controllers): the right stick moves you over the floor
+// in the direction you're looking (forward / back / sideways), the left
+// stick turns you 30° at a flick, about where you stand. Returns true on a
+// frame where you started moving (so an app can remember the view for undo).
+const MOVE_SPEED = 1.4, DEAD = 0.18, TURN = Math.PI / 6;
+export class StickNav {
+  constructor(dolly) {
+    this.dolly = dolly;
+    this.moving = false;
+    this.flicked = false;
+  }
+
+  update(hands, dt, viewer) {
+    const d = this.dolly;
+    const right = hands.find((h) => h.kind === 'controller' && h.handedness === 'right');
+    const left = hands.find((h) => h.kind === 'controller' && h.handedness === 'left');
+    let started = false;
+    const s = right?.stick;
+    if (s && Math.hypot(s.x, s.y) > DEAD) {
+      if (!this.moving) started = true;
+      this.moving = true;
+      const fwd = _m.set(0, 0, -1).applyQuaternion(viewer.getWorldQuaternion(new THREE.Quaternion()));
+      fwd.y = 0;
+      if (fwd.lengthSq() < 1e-6) fwd.set(0, 0, -1);
+      fwd.normalize();
+      const side = _p.set(-fwd.z, 0, fwd.x);
+      d.position.addScaledVector(fwd, s.y * MOVE_SPEED * dt * d.scale.x).addScaledVector(side, s.x * MOVE_SPEED * dt * d.scale.x);
+      d.updateMatrixWorld(true);
+    } else this.moving = false;
+    const x = left?.stick.x || 0;
+    if (Math.abs(x) > 0.7 && !this.flicked) {
+      this.flicked = true;
+      started = true;
+      // turn about your head, so you stay where you are
+      const head = viewer.getWorldPosition(new THREE.Vector3());
+      const q = new THREE.Quaternion().setFromAxisAngle(UP, x > 0 ? -TURN : TURN);
+      d.position.sub(head).applyQuaternion(q).add(head);
+      d.quaternion.premultiply(q);
+      d.updateMatrixWorld(true);
+    } else if (Math.abs(x) < 0.3) this.flicked = false;
+    return started;
+  }
+}
+
 // Back to where you really are: no offset, no turn, life size; and, given
 // the `world` group, no zoom.
 export function resetDolly(dolly, world = null) {

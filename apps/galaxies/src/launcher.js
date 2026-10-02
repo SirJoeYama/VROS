@@ -50,8 +50,8 @@ export class Launcher {
   update(hands, dt, t, current, viewerRight) {
     this.cooldown -= dt;
     const menuHand =
-      hands.find((h) => h.kind === 'hand' && h.palmUp && h.handedness === 'left') ||
-      hands.find((h) => h.kind === 'hand' && h.palmUp);
+      hands.find((h) => h.kind !== 'mouse' && h.palmUp && h.handedness === 'left') ||
+      hands.find((h) => h.kind !== 'mouse' && h.palmUp);
 
     if (menuHand) {
       this.normal.copy(menuHand.palmNormal);
@@ -66,7 +66,7 @@ export class Launcher {
       return null;
     }
 
-    const poker = menuHand && hands.find((h) => h !== menuHand && h.kind === 'hand');
+    const poker = menuHand && hands.find((h) => h !== menuHand && h.kind !== 'mouse'); // a fingertip or the other controller's tip
     const n = this.orbs.length;
     let hovered = -1;
     this.orbs.forEach((orb, k) => {

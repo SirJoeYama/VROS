@@ -6,6 +6,7 @@ import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { FistTwist } from '../../../shared/fistTwist.js';
+import { Pointer } from '../../../shared/pointer.js';
 import { NavGrab, resetDolly } from '../../../shared/navGrab.js';
 import { Player, formatTime } from './player.js';
 import { Remote, REMOTE_W, REMOTE_H } from './remote.js';
@@ -191,6 +192,14 @@ function placeXR(frame) {
   return true;
 }
 
+// The remote, pressed with a fingertip or the controller's pointer.
+function pressRemote(local) {
+  const hit = remote.hit(local);
+  if (!hit) return;
+  remote.press(hit);
+  if (hit.id === 'play') flash(player.playing || player.pendingPlay ? '▶' : '❚❚');
+}
+
 // ---------- gestures ----------
 const handsView = new HandsView();
 scene.add(handsView.points);
@@ -203,6 +212,9 @@ const undoGesture = new UndoGesture();
 scene.add(undoGesture.group);
 const help = HelpGesture.fromPage();
 scene.add(help.group);
+// Controllers: a laser pointer for the panel (point + trigger).
+const pointer = new Pointer();
+scene.add(pointer.group);
 const twist = new FistTwist();
 
 const pinches = new Map(); // pointer id → { t, at, cancelled }
@@ -392,7 +404,8 @@ renderer.setAnimationLoop((time, frame) => {
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
   undoGesture.update(input.hands, dt, viewer);
-  updateGestures(input.hands.filter((h) => h !== helpHand), dt);
+  const pointing = pointer.update(input.hands, [{ object: remote.mesh, w: REMOTE_W, h: REMOTE_H, press: (l) => pressRemote(l) }], you());
+  updateGestures(input.hands.filter((h) => h !== helpHand && !pointing.has(h.id) && !h.aim), dt);
   updateScreen();
   remote.draw();
   handsView.update(input.hands, you());

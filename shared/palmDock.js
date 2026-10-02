@@ -14,7 +14,8 @@ const _p = new THREE.Vector3(), _eye = new THREE.Vector3(), _s = new THREE.Vecto
 // palm and it stays where it was, in the air. To turn it, hold its two
 // handles (see PanelGrab).
 // It doesn't come while both palms are up or a hand is pinching: that's the
-// two-hand grab getting ready.
+// two-hand grab getting ready. With controllers: click the left stick and
+// the menu comes to the left controller; click again and it stays in the air.
 // The left hand is preferred when both are up.
 // `target` moves (the panel or a group holding it); `panel` is the panel mesh,
 // `height` its unscaled height, so its bottom edge can sit above the palm.
@@ -70,8 +71,28 @@ export class PalmDock {
       this.hold = 0;
     }
 
+    // controllers: the left stick click
+    const pad = hands.find((x) => x.kind === 'controller' && x.handedness === 'left');
+    const click = !!pad?.btn.stick && !this._click;
+    this._click = !!pad?.btn.stick;
+    if (click && !this.busy()) {
+      if (this.docked && this.hand === pad.id) this.hand = null;
+      else {
+        if (this.detach && this.target.parent !== this.detach) this.detach.attach(this.target);
+        this.hand = pad.id;
+        this.lost = 0;
+        this.onMove();
+        this._follow(pad, k, true);
+      }
+    }
+
     if (this.docked) {
       const h = hands.find((x) => x.id === this.hand);
+      if (h && h.kind === 'controller') {
+        this._follow(h, k); // stays on the controller until the next click
+        this.ring.visible = false;
+        return h;
+      }
       if (h && up(h)) {
         this.lost = 0;
         this._follow(h, k);

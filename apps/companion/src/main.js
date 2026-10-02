@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Input, palmFacesUp } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
+import { Pointer } from '../../../shared/pointer.js';
 import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
@@ -342,6 +343,9 @@ const undoGesture = new UndoGesture();
 scene.add(undoGesture.group);
 const help = HelpGesture.fromPage();
 scene.add(help.group);
+// Controllers: a laser pointer for Pip's buttons (point + trigger).
+const pointer = new Pointer();
+scene.add(pointer.group);
 
 const pinches = new Map(); // pointer id → { t, at, cancelled }
 const armed = new Map(); // hand id → the fingertip hovering in front of a button
@@ -498,7 +502,11 @@ renderer.setAnimationLoop((time, frame) => {
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
   undoGesture.update(input.hands, dt, viewer);
-  updateGestures(input.hands.filter((h) => h !== helpHand), dt);
+  const pointing = pointer.update(input.hands, [{ meshes: [pet.group], press: (aim) => {
+    const id = pet.hit(toPet(aim.point), 0.01);
+    if (id) { pet.press(id); ACTIONS[id](); }
+  } }], you());
+  updateGestures(input.hands.filter((h) => h !== helpHand && !pointing.has(h.id) && !h.aim), dt);
   updatePhase();
   if (phase === 'listening' && speechStatus && !heard && !bubble.answer) bubble.set({ status: speechStatus === 'listening' ? 'listening…' : speechStatus });
   pet.update(dt, face());

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Input } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
+import { Pointer } from '../../../shared/pointer.js';
 import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
@@ -33,6 +34,9 @@ handsView.points.material.uniforms.uScale.value = 1000;
 scene.add(handsView.points);
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
+// Controllers: a laser pointer for the cards (point + trigger).
+const pointer = new Pointer();
+scene.add(pointer.group);
 // Peace sign held a second: undo / redo (nothing to undo here, it just says so).
 const undoGesture = new UndoGesture();
 scene.add(undoGesture.group);
@@ -102,12 +106,17 @@ renderer.setAnimationLoop((time, frame) => {
     help.hint(renderer.xr.getCamera());
   }
   input.update(frame, dt, drum.group.getWorldPosition(center));
-  for (const ev of input.events) if (ev === 'recenter') needPlace = true;
+  for (const ev of input.events) {
+    if (ev === 'recenter') needPlace = true;
+    else if (ev === 'down') drum.step(1); // right stick: flip through the cards
+    else if (ev === 'up') drum.step(-1);
+  }
   const viewer = renderer.xr.getCamera();
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
   undoGesture.update(input.hands, dt, viewer);
-  drum.update(input.hands.filter((h) => h !== helpHand), dt);
+  const pointing = pointer.update(input.hands, [{ meshes: drum.meshes(), press: () => drum.openFront() }]);
+  drum.update(input.hands.filter((h) => h !== helpHand && !pointing.has(h.id) && !h.aim), dt);
   if (pending && drum.front !== pending) {
     pending = null; // flipped to another card
     drum.setHint('pinch to open the front card');

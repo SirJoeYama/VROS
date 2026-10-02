@@ -7,6 +7,7 @@ import { HelpGesture } from '../../../shared/helpGesture.js';
 import { FistTwist } from '../../../shared/fistTwist.js';
 import { SceneGrab } from '../../../shared/sceneGrab.js';
 import { PanelGrab } from '../../../shared/panelGrab.js';
+import { Pointer } from '../../../shared/pointer.js';
 import { PalmDock } from '../../../shared/palmDock.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { Doc, saveDoc, loadDoc } from './doc.js';
@@ -58,6 +59,9 @@ const panelGrab = new PanelGrab(desk, panel.mesh, PANEL_W, PANEL_H);
 // a painter's palette you hold while you paint with the other hand.
 const palmDock = new PalmDock(desk, panel.mesh, PANEL_H, { busy: () => panelGrab.dragging, onMove: () => (panelGrab.moved = true) });
 scene.add(palmDock.group);
+// Controllers: a laser pointer for the panel (point + trigger).
+const pointer = new Pointer();
+scene.add(pointer.group);
 
 const handsView = new HandsView();
 scene.add(handsView.points);
@@ -275,7 +279,7 @@ const strokes = new Map(); // hand id → { stroke, t0, smooth }
 const erasing = new Map(); // hand id → { frame, before }
 const local = new THREE.Vector3(), tmp = new THREE.Vector3(), side = new THREE.Vector3();
 const invQ = new THREE.Quaternion();
-let sceneGrab = null, twistHand = null, fistsHeld = 0, mouseOnPanel = false;
+let sceneGrab = null, fistsHeld = 0, mouseOnPanel = false;
 
 function panelLocal(point) {
   panel.mesh.worldToLocal(local.copy(point));
@@ -426,28 +430,36 @@ function updateSceneGrab(hands) {
   sceneGrab.update(a, b);
 }
 
-// One fist + twist: brush size, like a knob. Two fists held a second: the
-// panel comes back in front of you.
+// Fist + twist, like a knob (a gripped controller works the same): the LEFT
+// hand changes the brush size, the RIGHT hand scrubs through the frames,
+// clockwise forward. Both fists held a second: the panel comes back in
+// front of you.
+const TWIST_FRAME = 0.5; // radians of twist per frame
+const twistAcc = new Map(); // hand id → { from: frame when the fist closed, total: twist since }
 function updateFists(hands, dt) {
-  const fists = hands.filter((h) => h.kind === 'hand' && h.fist);
+  const fists = hands.filter((h) => h.kind !== 'mouse' && h.fist);
   twist.prune(hands);
-  for (const h of hands) if (!h.fist) twist.release(h);
+  for (const h of hands) if (!h.fist) { twist.release(h); twistAcc.delete(h.id); }
   fistsHeld = fists.length === 2 ? fistsHeld + dt : 0;
   if (fistsHeld > 1) {
     fistsHeld = -1e9;
     recenter();
   }
-  if (fists.length !== 1) {
-    twistHand = null;
-    return;
-  }
+  if (fists.length !== 1) return; // two fists: that's the recenter, not a knob
   const h = fists[0];
   const roll = twist.roll(h);
-  if (twistHand !== h.id) {
-    twistHand = h.id;
+  if (!roll) return;
+  if (h.handedness === 'left') {
+    S.size = THREE.MathUtils.clamp(S.size * Math.exp(roll * TWIST_SIZE), SIZE_MIN, SIZE_MAX);
     return;
   }
-  S.size = THREE.MathUtils.clamp(S.size * Math.exp(roll * TWIST_SIZE), SIZE_MIN, SIZE_MAX);
+  // Like a knob with detents: the frame follows the total twist, so turning
+  // back the same amount comes back to the same frame.
+  let k = twistAcc.get(h.id);
+  if (!k) twistAcc.set(h.id, (k = { from: doc.t, total: 0 }));
+  k.total += roll;
+  const t = k.from + Math.round(k.total / TWIST_FRAME);
+  if (t !== doc.t) { stop(); doc.go(t); }
 }
 
 // ---------- the mouse (desktop preview) ----------
@@ -551,7 +563,8 @@ renderer.setAnimationLoop((time, frame) => {
   const peace = undoGesture.update(input.hands, dt, viewer);
   const palmHand = palmDock.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
   const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand), dt, viewer);
-  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id));
+  const pointing = pointer.update(input.hands, [{ object: panel.mesh, w: PANEL_W, h: PANEL_H, press: (l) => press(panel.hit(l)), drag: (l) => { const hit = panel.hit(l); if (hit?.drag) press(hit); } }], 1);
+  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id) && !pointing.has(h.id) && !h.aim);
   updateHands(hands, dt, now);
   wheelZoom();
 

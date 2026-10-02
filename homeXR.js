@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Input } from './shared/input.js';
 import { HandsView } from './shared/handsView.js';
 import { CloseGesture } from './shared/closeGesture.js';
+import { Pointer } from './shared/pointer.js';
 import { HelpGesture } from './shared/helpGesture.js';
 import { setupEnterXR } from './shared/xr.js';
 
@@ -192,6 +193,9 @@ export function startHomeXR(apps, button) {
     { icon: '👎', key: 'Right thumbs down', text: 'here: leave XR' },
   ], { sub: 'home', common: [] });
   scene.add(help.group);
+  // Controllers: point at an icon and pull the trigger.
+  const pointer = new Pointer();
+  scene.add(pointer.group);
 
   const shelf = new HomeShelf(apps, (app) => setTimeout(() => location.assign(`apps/${app.id}/`), 120));
   scene.add(shelf.group);
@@ -233,7 +237,8 @@ export function startHomeXR(apps, button) {
     const viewer = renderer.xr.getCamera();
     const helpHand = help.update(input.hands, dt, viewer);
     closeGesture.update(input.hands, dt, viewer);
-    shelf.update(input.hands.filter((h) => h !== helpHand), dt);
+    const pointing = pointer.update(input.hands, shelf.tiles.map((tile) => ({ object: tile.group, w: TILE * 1.2, h: TILE * 1.2, press: () => shelf._launch(tile) })));
+    shelf.update(input.hands.filter((h) => h !== helpHand && !pointing.has(h.id) && !h.aim), dt);
     handsView.update(input.hands);
     renderer.render(scene, camera);
   });
