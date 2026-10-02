@@ -13,7 +13,7 @@ export const COMMON = {
   view: ['🙌', 'Both palms up, pinch', 'move · zoom · turn the view'],
   reset: ['✊✊', 'Two fists, 1 s', 'back in front of you'],
   menu: ['🤲', 'Palm up, 1 s', 'panel to your hand'],
-  panel: ['🤏', 'Bar under the panel', 'carry it · corner: resize'],
+  panel: ['🤏', 'Panel handles', 'carry · resize · both: turn'],
   undo: ['✌️', 'Peace sign, 1 s', 'left: undo · right: redo'],
   close: ['👎', 'Right thumbs down', 'close the app'],
   help: ['✋', 'Palm to your eyes', 'show / hide this help'],
