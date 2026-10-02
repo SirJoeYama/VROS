@@ -195,6 +195,21 @@ export class Drum3D {
     return Math.max(0, Math.min(this.tabs.list.length - 1, Math.round(this.rot)));
   }
 
+  // The card meshes (for the controller pointer), opening the front card,
+  // and flipping one card on (+1) or back (-1).
+  meshes() {
+    return [...this.cards.values()].map((c) => c.mesh);
+  }
+
+  openFront() {
+    this._pick();
+  }
+
+  step(k) {
+    this.vel = 0;
+    this.rot = THREE.MathUtils.clamp(Math.round(this.rot) + k, 0, Math.max(0, this.tabs.list.length - 1));
+  }
+
   update(hands, dt) {
     const n = this.tabs.list.length;
     const local = this._local;

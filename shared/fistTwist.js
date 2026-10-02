@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 const _axis = new THREE.Vector3(), _across = new THREE.Vector3(), _v = new THREE.Vector3();
 
-// Twisting a closed fist like a knob. roll(h) returns how far a tracked
+// Twisting a closed fist (or a gripped controller) like a knob. roll(h) returns how far a tracked
 // hand's fist has rolled around the forearm since the last call, in radians;
 // seen from behind the hand (the wearer's view), positive is clockwise.
 // It returns 0 on the first frame of a fist; call release(h) when the hand
@@ -14,8 +14,14 @@ export class FistTwist {
 
   roll(h) {
     const j = h.joints;
-    _axis.set(j[33] - j[0], j[34] - j[1], j[35] - j[2]).normalize(); // wrist → middle knuckle
-    _across.set(j[18] - j[63], j[19] - j[64], j[20] - j[65]); // pinky knuckle → index knuckle
+    if (h.kind === 'controller') {
+      // a gripped controller: roll about where it points, like turning a key
+      _axis.set(0, 0, -1).applyQuaternion(h.quat);
+      _across.set(1, 0, 0).applyQuaternion(h.quat);
+    } else {
+      _axis.set(j[33] - j[0], j[34] - j[1], j[35] - j[2]).normalize(); // wrist → middle knuckle
+      _across.set(j[18] - j[63], j[19] - j[64], j[20] - j[65]); // pinky knuckle → index knuckle
+    }
     _across.addScaledVector(_axis, -_across.dot(_axis)).normalize();
     const prev = this.prev.get(h.id);
     this.prev.set(h.id, _across.clone());

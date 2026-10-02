@@ -7,8 +7,9 @@ import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { FistTwist } from '../../../shared/fistTwist.js';
 import { PanelGrab } from '../../../shared/panelGrab.js';
+import { Pointer } from '../../../shared/pointer.js';
 import { PalmDock } from '../../../shared/palmDock.js';
-import { NavGrab, NavDrag, resetDolly } from '../../../shared/navGrab.js';
+import { NavGrab, NavDrag, resetDolly, StickNav } from '../../../shared/navGrab.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { Scene, SAMPLES, FORMATS } from './scene.js';
 import { Measure } from './measure.js';
@@ -60,6 +61,11 @@ const panelGrab = new PanelGrab(desk, panel.mesh, PANEL_W, PANEL_H);
 // Palm up for a second: the panel comes to your hand.
 const palmDock = new PalmDock(desk, panel.mesh, PANEL_H, { busy: () => panelGrab.dragging, onMove: () => (panelGrab.moved = true) });
 scene.add(palmDock.group);
+// Controllers: a laser pointer for the panel (point + trigger).
+const pointer = new Pointer();
+scene.add(pointer.group);
+// Controllers: the sticks move you (right) and turn you (left).
+const stickNav = new StickNav(dolly);
 
 const handsView = new HandsView();
 scene.add(handsView.points);
@@ -515,7 +521,9 @@ renderer.setAnimationLoop((time, frame) => {
   const peace = undoGesture.update(input.hands, dt, viewer);
   const palmHand = palmDock.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
   const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand), dt, viewer);
-  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id));
+  const pointing = pointer.update(input.hands, [{ object: panel.mesh, w: PANEL_W, h: PANEL_H, press: (l) => press(panel.hit(l)) }], you());
+  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id) && !pointing.has(h.id) && !h.aim);
+  if (stickNav.update(input.hands, dt, viewer)) remember(); // undo goes back to before you moved
   updateHands(hands, dt);
   wheelZoom();
   if (S.spin && view.info) view.spin(SPIN_SPEED * dt);

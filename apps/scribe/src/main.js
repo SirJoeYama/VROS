@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Input } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
+import { Pointer } from '../../../shared/pointer.js';
 import { UndoGesture } from '../../../shared/undoGesture.js';
 import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
@@ -43,6 +44,9 @@ scene.add(handsView.points);
 const input = new Input(renderer, camera);
 const closeGesture = new CloseGesture(renderer);
 scene.add(closeGesture.group);
+// Controllers: a laser pointer for the page and its buttons (point + trigger).
+const pointer = new Pointer();
+scene.add(pointer.group);
 // Peace sign held a second: left hand undo, right hand redo.
 const undoGesture = new UndoGesture({
   undo: () => doc.undo() && 'Undo',
@@ -260,6 +264,10 @@ renderer.setAnimationLoop((time, frame) => {
     input.wheel = 0;
   }
 
+  // Controllers: where the beam meets the page (or a button) is where they
+  // touch and pinch, so selecting words and pressing buttons work from afar.
+  pointer.update(input.hands, [{ meshes: [page.group] }]);
+  for (const h of input.hands) if (h.aim) { h.pinchPoint.copy(h.aim.point); h.indexTip.copy(h.aim.point); }
   updateGestures(input.hands, dt);
   const viewer = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
   closeGesture.update(input.hands, dt, viewer);

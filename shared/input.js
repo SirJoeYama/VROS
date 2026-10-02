@@ -39,6 +39,14 @@ function makeState(id) {
     indexTip: new THREE.Vector3(),
     lateral: new THREE.Vector3(1, 0, 0),
     vel: new THREE.Vector3(),
+    // controllers only (Quest Touch): see Input._updateXR
+    grip: false,
+    quat: new THREE.Quaternion(), // the controller's orientation
+    rayOrigin: new THREE.Vector3(), // where it points from, and which way
+    rayDir: new THREE.Vector3(0, 0, -1),
+    stick: new THREE.Vector2(), // thumbstick, x right, y up (-1..1)
+    btn: { a: false, b: false, stick: false }, // A/B on the right, X/Y on the left (named a/b too), stick click
+    aim: null, // set by Pointer: { point, surface } where the ray hits something the app can press
     _prev: new THREE.Vector3(),
     _hasPrev: false,
     _buttons: [],
@@ -113,6 +121,16 @@ function trackVelocity(st, pos, dt) {
 }
 
 // Unifies tracked hands, controllers and the desktop mouse into hand-like states.
+//
+// Quest controllers (the standard VROS mapping):
+//   trigger = pinch (analog: `pressure`) · grip = fist (grip + twist the
+//   controller = the knob; both grips = two fists) · both triggers = the
+//   two-hand grab · ray = `rayOrigin` / `rayDir` (the laser pointer, see
+//   Pointer) · thumbstick = `stick` · buttons in `btn`: on the left `a` is X
+//   and `b` is Y. Events: 'recenter' (right stick click), 'menu' (left stick
+//   click), and stick flicks 'next' / 'prev' (right stick right / left) and
+//   'up' / 'down'. The shared gestures read X / A (undo / redo), B (help),
+//   holding Y (close) and the left stick click (menu to hand) themselves.
 export class Input {
   constructor(renderer, camera) {
     this.renderer = renderer;
@@ -205,17 +223,46 @@ export class Input {
         const pressed = (i) => !!(b[i] && (b[i].pressed || b[i].value > 0.5));
         st.pinch = pressed(0);
         st.pressure = b[0] ? Math.max(0.15, b[0].value) : 1;
-        st.open = pressed(1) && !st.pinch;
-        st.fist = false;
+        st.grip = pressed(1);
+        st.fist = st.grip && !st.pinch; // grip + twist = the knob; both grips = two fists
+        st.open = false;
         st.palmUp = false;
+        st.thumbOut = false;
+        st.curled = 0;
+        st.btn.a = pressed(4);
+        st.btn.b = pressed(5);
+        st.btn.stick = pressed(3);
+        // orientation, the lateral axis (which way a ribbon brush lies) and the ray
+        st.quat.set(pose.transform.orientation.x, pose.transform.orientation.y, pose.transform.orientation.z, pose.transform.orientation.w);
+        st.lateral.set(1, 0, 0).applyQuaternion(st.quat);
+        const ray = src.targetRaySpace && frame.getPose(src.targetRaySpace, ref);
+        if (ray) {
+          const r = ray.transform;
+          st.rayOrigin.set(r.position.x, r.position.y, r.position.z);
+          st.rayDir.set(0, 0, -1).applyQuaternion(new THREE.Quaternion(r.orientation.x, r.orientation.y, r.orientation.z, r.orientation.w));
+        } else {
+          st.rayOrigin.set(q.x, q.y, q.z);
+          st.rayDir.copy(st.palmNormal);
+        }
+        const ax = src.gamepad?.axes || [];
+        st.stick.set(ax[2] || 0, -(ax[3] || 0));
         const edge = (i, name) => {
           const now = pressed(i);
           if (now && !st._buttons[i]) this.events.push(name);
           st._buttons[i] = now;
         };
-        edge(4, 'next');
-        edge(5, 'prev');
-        edge(3, 'recenter');
+        edge(3, src.handedness === 'left' ? 'menu' : 'recenter');
+        // flicks of the right stick step through things
+        if (src.handedness === 'right') {
+          const flick = (v, plus, minus, key) => {
+            if (Math.abs(v) > 0.7 && !st._buttons[key]) {
+              this.events.push(v > 0 ? plus : minus);
+              st._buttons[key] = true;
+            } else if (Math.abs(v) < 0.3) st._buttons[key] = false;
+          };
+          flick(st.stick.x, 'next', 'prev', 'fx');
+          flick(st.stick.y, 'up', 'down', 'fy');
+        }
         this._toWorld(st);
         trackVelocity(st, st.palmCenter, dt);
         st.active = true;
@@ -239,6 +286,11 @@ export class Input {
     st.indexTip.applyMatrix4(m);
     st.palmNormal.transformDirection(m);
     st.lateral.transformDirection(m);
+    if (st.kind === 'controller') {
+      st.rayOrigin.applyMatrix4(m);
+      st.rayDir.transformDirection(m);
+      st.quat.premultiply(o.getWorldQuaternion(new THREE.Quaternion()));
+    }
   }
 
   _updateMouse(dt, center) {

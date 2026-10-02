@@ -19,6 +19,24 @@ export const COMMON = {
   help: ['✋', 'Palm to your eyes', 'show / hide this help'],
 };
 
+// The same things on Quest controllers, shown instead when you're holding them.
+// Which apply follows the app's shared gestures (`walk`: the sticks move you).
+function controlsFor(common) {
+  const has = (k) => common.includes(k);
+  return [
+    ['🎯', 'Point + trigger', 'press panels and buttons'],
+    ['🤏', 'Trigger', 'pinch'],
+    ['✊', 'Grip, twist it', 'fist · the knob'],
+    has('view') && ['🙌', 'Both triggers', 'move · zoom · turn the view'],
+    has('walk') && ['🕹️', 'Sticks', 'right: move · left: turn'],
+    ['⏪', 'X / A', 'undo / redo'],
+    ['❔', 'B', 'show / hide this help'],
+    ['👎', 'Hold Y', 'close the app'],
+    has('menu') && ['🤲', 'Left stick click', 'panel to your controller'],
+    has('reset') && ['🔄', 'Right stick click', 'back in front of you'],
+  ].filter(Boolean);
+}
+
 const _eye = new THREE.Vector3(), _toEye = new THREE.Vector3(), _up = new THREE.Vector3();
 const _fwd = new THREE.Vector3(), _right = new THREE.Vector3();
 
@@ -51,6 +69,7 @@ export class HelpGesture {
     this.title = title;
     this.sub = sub;
     this.rows = rows.map((r) => (Array.isArray(r) ? { icon: '', key: r[0], text: r[1] } : r));
+    this.features = common; // what the app has, for the controller chips (incl. `walk`)
     this.common = [...new Set([...common, 'close', 'help'])].filter((c) => COMMON[c]);
     this.context = null;
     this.contextLabel = '';
@@ -119,18 +138,33 @@ export class HelpGesture {
 
   // A short tip when an XR session starts, so the gesture can be discovered.
   hint(viewer) {
-    this._draw('Tip', '', [{ icon: '✋', key: 'Palm to your eyes', text: 'hold it for help with this app' }], []);
+    const row = this.pads
+      ? { icon: '❔', key: 'Press B', text: 'for help with this app' }
+      : { icon: '✋', key: 'Palm to your eyes', text: 'hold it for help with this app' };
+    this._draw('Tip', '', [row], []);
     this._place(viewer, null);
     this.hintTime = 5;
     this.open = false;
   }
 
   // Returns the hand currently making the help pose (or null) so apps can
-  // ignore it for their own gestures.
+  // ignore it for their own gestures. With controllers, B toggles the card.
   update(hands, dt, viewer) {
     viewer.getWorldPosition(_eye);
     this.k = viewer.getWorldScale(_up).x;
     const hand = hands.find((h) => inHelpPose(h, _eye, this.k)) || null;
+    this.pads = hands.some((h) => h.kind === 'controller');
+    const pad = hands.find((h) => h.kind === 'controller' && h.handedness === 'right');
+    const b = !!pad?.btn.b;
+    if (b && !this._b) {
+      this.open = !this.open;
+      this.hintTime = 0;
+      if (this.open) {
+        this._render();
+        this._place(viewer, null);
+      }
+    }
+    this._b = b;
 
     if (hand && this.armed) {
       this.hold += dt;
@@ -179,15 +213,19 @@ export class HelpGesture {
 
   // The rows for now: the ones tied to the current context, and the ones
   // tied to none (rows for the desktop never show here).
+  // Rows tagged "pads" are for controllers: shown while you're holding them.
   visibleRows() {
-    return this.rows.filter((r) => !r.when || (this.context != null && r.when.includes(String(this.context))));
+    return this.rows.filter((r) => !r.when || (this.context != null && r.when.includes(String(this.context))) || (this.pads && r.when.includes('pads')));
   }
 
   _render() {
-    this._draw(this.title, this.contextLabel || this.sub, this.visibleRows(), this.common);
+    const pads = this.pads && controlsFor(this.features);
+    this._draw(this.title, this.contextLabel || this.sub, this.visibleRows(), this.common, pads);
   }
 
-  _draw(title, sub, rows, common) {
+  // `pads`: controller chips to show instead of the shared hand gestures.
+  _draw(title, sub, rows, common, pads = null) {
+    const chips = pads || common.map((c) => COMMON[c]);
     const g = this.ctx;
     const tileW = (CW - PAD * 2 - 24) / COLS, textW = tileW - ICON - 22;
     g.font = `300 25px ${FONT}`;
@@ -197,7 +235,7 @@ export class HelpGesture {
     for (let i = 0; i < tiles.length; i += COLS) rowHeights.push(Math.max(...tiles.slice(i, i + COLS).map(tileH), ICON) + 18);
     const HEAD = sub ? 132 : 104;
     const chipCols = 3, chipH = 74;
-    const commonH = common.length ? 48 + Math.ceil(common.length / chipCols) * (chipH + 10) : 0;
+    const commonH = chips.length ? 48 + Math.ceil(chips.length / chipCols) * (chipH + 10) : 0;
     const h = HEAD + rowHeights.reduce((a, b) => a + b, 0) + (tiles.length ? 10 : 0) + commonH + PAD - 10;
     this.canvas.height = h;
 
@@ -241,7 +279,7 @@ export class HelpGesture {
     if (tiles.length) y += rowHeights[rowHeights.length - 1] + 10;
 
     // what every app shares
-    if (common.length) {
+    if (chips.length) {
       g.strokeStyle = 'rgba(159, 184, 255, 0.18)';
       g.lineWidth = 2;
       g.beginPath();
@@ -251,12 +289,11 @@ export class HelpGesture {
       g.fillStyle = '#6f7795';
       g.font = `500 19px ${FONT}`;
       g.letterSpacing = '3px';
-      g.fillText('EVERYWHERE', PAD, y + 30);
+      g.fillText(pads ? 'ON CONTROLLERS' : 'EVERYWHERE', PAD, y + 30);
       g.letterSpacing = '0px';
       y += 48;
       const cw = (CW - PAD * 2 - (chipCols - 1) * 10) / chipCols;
-      common.forEach((c, i) => {
-        const [icon, key, text] = COMMON[c];
+      chips.forEach(([icon, key, text], i) => {
         const x = PAD + (i % chipCols) * (cw + 10), yy = y + Math.floor(i / chipCols) * (chipH + 10);
         g.fillStyle = 'rgba(159, 184, 255, 0.07)';
         g.beginPath();

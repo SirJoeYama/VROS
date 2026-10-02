@@ -79,6 +79,7 @@ function switchApp(i) {
 }
 
 const launcher = new Launcher(APPS, switchApp);
+let dockOpen = false; // controllers: the dock, opened with the left stick click
 scene.add(launcher.group);
 
 addEventListener('keydown', (e) => {
@@ -178,6 +179,7 @@ renderer.setAnimationLoop((time, frame) => {
     if (ev === 'next') switchApp(appIndex + 1);
     else if (ev === 'prev') switchApp(appIndex - 1);
     else if (ev === 'recenter' && frame) recenter(frame);
+    else if (ev === 'menu') dockOpen = !dockOpen;
   }
   if (input.wheel) {
     world.scale = THREE.MathUtils.clamp(world.scale * Math.exp(-input.wheel * 0.001), 0.25, 5);
@@ -186,6 +188,9 @@ renderer.setAnimationLoop((time, frame) => {
 
   const xrCam = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
   viewerRight.setFromMatrixColumn(xrCam.matrixWorld, 0);
+  // Controllers: the left stick click opens and closes the dock on the left controller.
+  const leftPad = hands.find((h) => h.kind === 'controller' && h.handedness === 'left');
+  if (leftPad && dockOpen) leftPad.palmUp = true;
   const menuHand = launcher.update(hands, dt, t, appIndex, viewerRight);
   closeGesture.update(hands, dt, xrCam);
   undoGesture.update(hands, dt, xrCam);
@@ -221,7 +226,8 @@ renderer.setAnimationLoop((time, frame) => {
   // Open palms push particles like wind.
   F.pushers.length = 0;
   for (const h of hands) {
-    if (!h.open || h.palmUp || h === menuHand || h === helpHand) continue;
+    const wind = h.kind === 'controller' ? h.grip && !h.pinch : h.open; // controllers: the grip is the wind
+    if (!wind || h.palmUp || h === menuHand || h === helpHand) continue;
     F.pushers.push({
       x: h.palmCenter.x, y: h.palmCenter.y, z: h.palmCenter.z,
       nx: h.palmNormal.x, ny: h.palmNormal.y, nz: h.palmNormal.z,
@@ -230,7 +236,7 @@ renderer.setAnimationLoop((time, frame) => {
   }
 
   // A fist stills time; two fists held for a moment recenter the formation.
-  const fists = hands.filter((h) => h.fist).length;
+  const fists = hands.filter((h) => h.fist && h.kind === 'hand').length; // (a controller's grip is the wind)
   F.stillness += ((fists ? 1 : 0) - F.stillness) * Math.min(1, dt * 5);
   fistTime = fists >= 2 ? fistTime + dt : 0;
   if (fistTime > 1.2 && frame) {

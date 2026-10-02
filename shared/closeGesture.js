@@ -16,8 +16,9 @@ export function isThumbsDown(h) {
 }
 
 // Give a thumbs down with the right hand and hold it to close the app and go
-// back to the home screen (or, on the home screen, to leave XR). A ring
-// around the fist fills up while you hold.
+// back to the home screen (or, on the home screen, to leave XR); with
+// controllers, hold Y (left controller). A ring around the fist (or the
+// controller) fills up while you hold.
 // Brief tracking dropouts drain the hold slowly instead of resetting it.
 export class CloseGesture {
   constructor(renderer, homeUrl = '../../') {
@@ -46,7 +47,7 @@ export class CloseGesture {
   update(hands, dt, viewer) {
     if (this.closing) return;
     const k = viewer.getWorldScale(this._eye).x; // your size in the world (zoomed views)
-    const hand = hands.find(isThumbsDown);
+    const hand = hands.find(isThumbsDown) || hands.find((h) => h.kind === 'controller' && h.handedness === 'left' && h.btn.b);
     const pressed = !!hand;
 
     this.hold = pressed ? this.hold + dt : Math.max(0, this.hold - dt * 2);

@@ -39,7 +39,7 @@ The first app: generative particle formations you shape with your hands.
 | **Palm up** | Summons the app dock (glowing orbs) plus a clock above your palm. Poke an orb with your other index finger to launch that app. |
 | **Two fists, held ~1 s** | Recenters the formation in front of you. |
 
-Controllers work too: trigger = pinch, grip = palm, A/X and B/Y = next/previous app, thumbstick click = recenter.
+With controllers: trigger = pinch (a gravity well), grip = wind, a flick of the right stick = next / previous formation, left stick click = the formation dock (touch an orb with the other controller), right stick click = recenter.
 
 ### Formations
 
@@ -173,7 +173,8 @@ Paint in the air and animate it frame by frame, in the spirit of VR painting and
 | --- | --- |
 | **Pinch and move** | Paint. With **Erase** on, pinch and sweep through strokes to remove them (one sweep is one undo). |
 | **Pinch with both hands, palms up** | Move, scale and turn the whole drawing: pull it close and zoom in to paint fine detail, or step back to see it all. Strokes are as wide as the brush in the room, so painting zoomed in gives finer lines. |
-| **Fist + twist** | Brush size, like a knob. |
+| **Left fist + twist** | Brush size, like a knob. |
+| **Right fist + twist** | Scrub through the frames, like a jog dial: clockwise forward, counter-clockwise back (turning back the same amount returns to the same frame). |
 | **Poke the panel** | Everything else (below). |
 
 **Brushes:** **Ribbon**, a flat band that lies the way your hand is turned (like a calligraphy pen); **Tube**, round; **Glow**, round, see-through and additive. With controllers, the trigger is pressure: press harder for a wider line.
@@ -203,6 +204,26 @@ Objects (anything whose splats span less than 4 units) float in front of you abo
 
 Desktop preview: drag to pull the world, right-drag to turn around the splat, wheel to move closer or further; keys are listed on the page. This app uses three.js 0.180 (Spark needs it) through its own import map; the others stay on 0.170.
 
+## Quest controllers
+
+Every app works with Quest 3 controllers as well as hands, with the same mapping everywhere:
+
+| Controller | Does |
+| --- | --- |
+| **Trigger** | A pinch: grab, draw, select; a quick pull is a tap (play / pause). Analog: how hard you pull is the pressure in Plume. |
+| **Point + trigger** | Each controller has a laser pointer: point at a panel, remote, button, card, word or home icon and pull the trigger to press it; keep it held to drag a slider. A controller pointing at something is left out of the app's other gestures. |
+| **Grip** | A fist: grip and twist the controller (roll it like a key) for the knob (scrub, resize, spin, brush size, scroll); both grips held a second = two fists (recenter). In Galaxies the grip is the wind instead. |
+| **Both triggers** | The two-hand grab: move, zoom and turn the view (or the formation / drawing). |
+| **Right stick** | Marionette, Rigger, Splat: move over the floor where you're looking. Elsewhere a flick steps: next / previous formation (Galaxies), −10 / +10 s (Cinema), the next card (Holodex). |
+| **Left stick** | Marionette, Rigger, Splat: a flick turns you 30°. |
+| **X / A** | Undo / redo (like the left and right peace sign). |
+| **B** | Show or hide the help card, which then lists the controller mapping. |
+| **Hold Y, 1 s** | Close the app (like the thumbs down). |
+| **Left stick click** | The menu comes to your left controller (like palm up); click again and it stays in the air. |
+| **Right stick click** | Recenter. |
+
+Touching things with the controller's tip still works too (the panel bar and corner, Marionette's and Rigger's joints).
+
 ## Run it on your Quest 3
 
 WebXR needs a secure origin (HTTPS or `localhost`).
@@ -231,7 +252,7 @@ index.html, home.js, home.css   start screen (app icons)
 homeXR.js           the start screen in XR: icon shelf you poke
 shared/             used by the home screen and every app
   xr.js             Enter button, passthrough/VR choice, re-entering XR after navigation
-  input.js          hands / controllers / mouse → unified gesture state (and trigger pressure)
+  input.js          hands / controllers / mouse → unified gesture state (trigger pressure, grip, sticks, buttons, the pointing ray)
   handsView.js      glowing joint visualization
   pointsMaterial.js glowing point shader
   closeGesture.js   right-hand thumbs down → close the app (home: leave XR)
@@ -240,6 +261,7 @@ shared/             used by the home screen and every app
   navGrab.js        your view: two-hand move / turn (a camera "dolly") and zoom (scaling a `world` group, so you stay life size and nothing floats), one-hand pull; in Marionette, Rigger, Cinema, Pip, Splat
   panelGrab.js      the panel's two handles: bar = carry, corner = resize, both = turn it (Marionette, Rigger, Plume, Splat)
   palmDock.js       palm up held 1 s → the panel comes to your hand (Marionette, Rigger, Plume, Splat)
+  pointer.js        the controllers' laser pointer: press panels, remotes, buttons and icons from afar (every app)
   helpGesture.js    palm toward your eyes → help card
   undoGesture.js    peace sign held 1 s → undo (left hand) / redo (right hand)
   speech.js         speech recognition (built-in or Whisper) + voice activity gate (Scribe, Pip)
