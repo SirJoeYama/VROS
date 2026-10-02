@@ -10,7 +10,7 @@ const _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
 // Moving, turning and resizing a floating panel by hand, with two handles:
 // - the bar under the panel: pinch it and move to carry the panel; it keeps
 //   the angle it has;
-// - the grip at the bottom-right corner: pinch it and pull away from the
+// - the grip at the top-right corner: pinch it and pull away from the
 //   panel's middle to make it bigger, push in to make it smaller;
 // - both at once, one hand on each: hold it like a board. Moving your hands
 //   moves it, turning or tilting the line between them turns it, any way;
@@ -32,8 +32,10 @@ export class PanelGrab {
     const mat = () => new THREE.MeshBasicMaterial({ color: 0xdfe6ff, transparent: true, opacity: IDLE, depthWrite: false });
     this.bar = new THREE.Mesh(new THREE.CapsuleGeometry(BAR_H / 2, BAR_W - BAR_H, 4, 12).rotateZ(Math.PI / 2), mat());
     this.bar.position.set(0, -height / 2 - GAP, 0.002);
+    // at the top-right corner, well apart from the bar (bottom middle), so
+    // holding both gives a long line to turn the panel with
     this.grip = new THREE.Mesh(gripGeometry(0.03), mat());
-    this.grip.position.set(width / 2 + GAP * 0.6, -height / 2 - GAP * 0.6, 0.002);
+    this.grip.position.set(width / 2 + GAP * 0.6, height / 2 + GAP * 0.6, 0.002);
     for (const m of [this.bar, this.grip]) {
       m.renderOrder = 16;
       panel.add(m);
@@ -133,22 +135,27 @@ export class PanelGrab {
     this._setWorldPosition(this.target.getWorldPosition(_b).add(g.center).sub(now));
   }
 
-  // Both handles: the panel turns with the line from the bar hand to the
-  // corner hand, and moves with the point between them.
+  // Both handles: the panel turns as your two hands turn, and moves with the
+  // point between them. The turn is that of the frame the hands make (the
+  // line from the bar hand to the corner hand, and the vertical), so turning
+  // your hands 30° turns the panel 30° even though the line between them
+  // slants (the corner is up and right of the bar), and tilting it tilts it.
   _board(a, b) {
     if (!this.two) {
+      const f = handFrame(a, b);
+      if (!f) return;
       this.two = {
-        dir: b.clone().sub(a).normalize(),
+        frame: f,
         mid: a.clone().add(b).multiplyScalar(0.5),
         q: this.target.getWorldQuaternion(new THREE.Quaternion()),
         p: this.target.getWorldPosition(new THREE.Vector3()),
       };
     }
     const t = this.two;
-    const dir = _a.copy(b).sub(a);
-    if (dir.lengthSq() < 1e-8) return;
-    _q.setFromUnitVectors(t.dir, dir.normalize()); // how the line between your hands has turned
-    const world = _q2.copy(_q).multiply(t.q);
+    const f = handFrame(a, b);
+    if (!f) return;
+    _q.copy(f).multiply(_q2.copy(t.frame).invert()); // how the hands' frame has turned
+    const world = new THREE.Quaternion().copy(_q).multiply(t.q);
     const mid = _b.copy(a).add(b).multiplyScalar(0.5);
     this._setWorldPosition(t.p.clone().sub(t.mid).applyQuaternion(_q).add(mid));
     const parent = this.target.parent;
@@ -174,6 +181,21 @@ export class PanelGrab {
   }
 }
 
+// The orientation two hands make: x along the line from `a` to `b`, y the
+// vertical as far as it's square to that line, z across. Null if the hands
+// are on top of each other or one straight above the other.
+const _fx = new THREE.Vector3(), _fy = new THREE.Vector3(), _fz = new THREE.Vector3(), _fm = new THREE.Matrix4();
+function handFrame(a, b) {
+  _fx.copy(b).sub(a);
+  if (_fx.lengthSq() < 1e-8) return null;
+  _fx.normalize();
+  _fy.set(0, 1, 0).addScaledVector(_fx, -_fx.y);
+  if (_fy.lengthSq() < 1e-6) return null;
+  _fy.normalize();
+  _fz.crossVectors(_fx, _fy);
+  return new THREE.Quaternion().setFromRotationMatrix(_fm.makeBasis(_fx, _fy, _fz));
+}
+
 // Distance from a point to the bar's centre line.
 function segmentDistance(p, bar, length) {
   const c = bar.getWorldPosition(_a);
@@ -182,7 +204,8 @@ function segmentDistance(p, bar, length) {
   return p.distanceTo(c.addScaledVector(dir, t));
 }
 
-// An L-shaped corner grip, like a window's resize corner.
+// An L-shaped corner grip, like a window's resize corner, for the top-right
+// corner: drawn for the bottom right, then turned a quarter left.
 function gripGeometry(size) {
   const t = size * 0.28, s = new THREE.Shape();
   s.moveTo(-size / 2, -size / 2);
@@ -192,5 +215,5 @@ function gripGeometry(size) {
   s.lineTo(size / 2 - t, -size / 2 + t);
   s.lineTo(-size / 2, -size / 2 + t);
   s.closePath();
-  return new THREE.ShapeGeometry(s);
+  return new THREE.ShapeGeometry(s).rotateZ(Math.PI / 2);
 }
