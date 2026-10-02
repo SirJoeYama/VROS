@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#04050a" />
+  <title>Mocap · VROS</title>
+  <link rel="manifest" href="../../manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="overlay">
+    <a class="home" href="../../">← Home</a>
+    <h1>MOCAP</h1>
+    <p class="sub">record your head and hands, animate characters in Rigger</p>
+    <button id="enter" disabled>Checking WebXR…</button>
+    <p id="status"></p>
+    <dl class="legend" data-common="menu panel undo">
+      <dt data-icon="🙆">CALIBRATE</dt><dd>hold a T-pose for the countdown</dd>
+      <dt data-icon="●">RECORD</dt><dd>3 s countdown, then perform; STOP on the panel</dd>
+      <dt data-icon="🦵">LEGS</dt><dd>planted feet, or a library walk / jog / crouch</dd>
+      <dt data-icon="✂️">Timeline</dt><dd>poke to scrub; SET IN / SET OUT trim the take</dd>
+      <dt data-icon="🦴">In Rigger</dt><dd>takes show in 4 ANIMATE (human), marked ●</dd>
+    </dl>
+    <p class="desk">Recording needs the headset (Quest hand tracking or controllers). Desktop: click the panel to play back and trim takes · drag the timeline to scrub · Space play / pause · I / O set in / out · L live · V view · Delete · Ctrl+Z / Ctrl+Y undo, redo</p>
+    <p class="credit">Mannequin, skeleton and animations by <a href="https://github.com/Mesh2Motion/mesh2motion-app" target="_blank" rel="noopener">Mesh2Motion</a> (CC0).</p>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

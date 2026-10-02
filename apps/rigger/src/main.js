@@ -15,6 +15,7 @@ import { loadModel, loadGLTF } from './model.js';
 import { EditRig, SkeletonView } from './skeleton.js';
 import { Rigged, loadLibrary, download, importAnimations } from './rigged.js';
 import * as store from './store.js';
+import { listTakes, deleteTake } from '../../mocap/src/takes.js';
 import { Poser } from './pose.js';
 import { Panel, PANEL_W, PANEL_H, STEPS } from './panel.js';
 
@@ -117,6 +118,7 @@ const S = {
   clips: null, // library clips for the current rig, once loaded
   custom: [], // clips made in 5 POSE
   imported: [], // clips imported from GLB files
+  takes: [], // takes recorded in Mocap (human skeleton only)
   chosen: new Set(), // clip names to export
   poser: null, // 5 POSE: frames and pose handles on the rigged model
   lastClip: null, // { clip, time } last played in 4 ANIMATE, for CLIP POSE
@@ -197,6 +199,7 @@ function clearRig() {
   S.rigDef = null;
   S.custom = [];
   S.imported = [];
+  S.takes = [];
   S.chosen.clear();
   drags.clear();
 }
@@ -232,6 +235,7 @@ async function skin() {
     scene.add(S.poser.group);
     restoreClips();
     restoreImported();
+    restoreTakes();
     S.riggedVersion = S.version;
     ok = true;
   });
@@ -271,7 +275,7 @@ async function busy(text, fn) {
   }
 }
 
-const allClips = () => [...S.custom, ...S.imported, ...(S.clips || [])];
+const allClips = () => [...S.custom, ...S.imported, ...S.takes, ...(S.clips || [])];
 
 // Clips saved in 5 POSE are kept in the browser for each skeleton type (as
 // their frames), so they survive reloads, closing the app and re-skinning.
@@ -312,6 +316,26 @@ async function restoreImported() {
   }
 }
 const saveImported = () => store.set(importedKey(S.rigDef), S.imported.map((c) => ({ clip: THREE.AnimationClip.toJSON(c), sourceRest: c.sourceRest })));
+
+// Takes recorded in the Mocap app (same browser storage), already baked on
+// the human template skeleton: they play like library clips.
+async function restoreTakes() {
+  const rig = S.rigDef;
+  if (rig?.id !== 'human') return;
+  try {
+    const list = await listTakes();
+    if (S.rigDef !== rig) return;
+    const first = !S.takes.length;
+    S.takes = list.filter((t) => t.clip).map((t) => {
+      const c = THREE.AnimationClip.parse(t.clip);
+      c.mocap = t.id;
+      return c;
+    });
+    if (first) for (const c of S.takes) S.chosen.add(c.name);
+  } catch (err) {
+    console.warn('Could not read the Mocap takes', err);
+  }
+}
 
 async function importFile(file) {
   if (!S.rigged) return say('Skin a model first (3 FIT → SKIN & ANIMATE), then import its animations.');
@@ -447,7 +471,7 @@ function panelState() {
   const r = S.rigged, n = S.chosen.size, clips = allClips();
   return {
     ...base,
-    items: clips.map((c) => ({ id: `clip:${c.name}`, label: (c.imported ? '⤓ ' : c.custom ? '★ ' : '') + c.name.replace(/_/g, ' '), on: r?.clip === c, check: S.chosen.has(c.name) })),
+    items: clips.map((c) => ({ id: `clip:${c.name}`, label: (c.imported ? '⤓ ' : c.custom ? '★ ' : c.mocap ? '● ' : '') + c.name.replace(/_/g, ' '), on: r?.clip === c, check: S.chosen.has(c.name) })),
     empty: 'loading animations…',
     status: status(S.note || (r?.clip ? `${r.clip.name.replace(/_/g, ' ')}${r.paused ? ' (paused)' : ''} · tick ✓ the clips to export` : '')),
     actions: [
@@ -455,7 +479,7 @@ function panelState() {
       { id: 'pause', label: r?.paused ? '▶ PLAY' : '❚❚ PAUSE' },
       { id: 'weights', label: 'WEIGHTS', on: r?.showWeights },
       { id: 'all', label: n && n === clips.length ? 'NONE' : 'ALL' },
-      { id: 'removeClip', label: 'REMOVE', off: !r?.clip?.custom && !r?.clip?.imported },
+      { id: 'removeClip', label: 'REMOVE', off: !r?.clip?.custom && !r?.clip?.imported && !r?.clip?.mocap },
       { id: 'import', label: 'IMPORT' },
       { id: 'export', label: `EXPORT (${n})`, strong: true },
     ],
@@ -514,11 +538,14 @@ async function press(id) {
     },
     // The browser can't show a file picker inside XR.
     import: () => (renderer.xr.isPresenting ? say('To import animations, leave XR and use “Import animations…” in window mode.') : $('animfile').click()),
-    // Remove a clip made in 5 POSE or imported (the one playing).
+    // Remove a clip made in 5 POSE, imported or recorded in Mocap (the one playing).
     removeClip: () => {
       const c = S.rigged?.clip;
-      if (!c?.custom && !c?.imported) return;
-      if (c.imported) {
+      if (!c?.custom && !c?.imported && !c?.mocap) return;
+      if (c.mocap) {
+        S.takes = S.takes.filter((x) => x !== c);
+        deleteTake(c.mocap).catch(() => {});
+      } else if (c.imported) {
         S.imported = S.imported.filter((x) => x !== c);
         saveImported().catch(() => {});
       } else storeClips(S.rigDef, savedClips(S.rigDef).filter((x) => x.name !== c.name));
