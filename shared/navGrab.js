@@ -40,6 +40,22 @@ export class NavGrab {
   }
 }
 
+// One hand: grab the world and pull yourself through it. The world spot you
+// pinched stays under your fingers as you move your hand (no zoom, no turn).
+export class NavDrag {
+  constructor(dolly, a) {
+    this.dolly = dolly;
+    this.anchor = dolly.localToWorld(a.clone());
+  }
+
+  update(a) {
+    const d = this.dolly;
+    _p.copy(a).multiplyScalar(d.scale.x).applyQuaternion(d.quaternion);
+    d.position.copy(this.anchor).sub(_p);
+    d.updateMatrixWorld(true);
+  }
+}
+
 // Back to where you really are: no offset, no turn, life size.
 export function resetDolly(dolly) {
   dolly.position.set(0, 0, 0);

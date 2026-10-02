@@ -180,6 +180,25 @@ Paint in the air and animate it frame by frame, in the spirit of VR painting and
 
 Desktop preview: drag to paint on a plane through the drawing's origin, click the panel, right-drag to turn the drawing, wheel to scale it; keys are listed on the page.
 
+## Splat
+
+Walk through Gaussian splats: photoreal 3D captures of objects and places. Rendering is by [Spark](https://sparkjs.dev) (World Labs), which reads .ply (also compressed), .spz, .splat, .ksplat and .sog. Seven sample scenes load from Spark's examples; open your own in window mode (**Open a splat…**, drop a file on the page, or paste a link).
+
+| Gesture | Effect |
+| --- | --- |
+| **Pinch and move** | Grab the world and pull yourself through it: the spot you pinched stays under your fingers. |
+| **Pinch with both hands** | Move, zoom (pull apart to get smaller and see detail, push together to get bigger and see it all) and turn your view. The floor stays level. |
+| **Fist + twist** | Spin the splat like a turntable. |
+| **MEASURE, then pinch** | Drop two points: the line between them shows its length, in meters once the splat is the right size (use SIZE − / + to calibrate it against something you know). A third pinch starts again. |
+| **Peace sign, held 1 s** | Left hand: undo; right hand: redo. Covers where you were (every pull, grab and reset) and how the splat sits (flips, turns, size, spin). |
+| **Two fists, held 1 s** | Reset the view: life size, back in front of it, and the panel too. |
+| **Palm up, held 1 s** | The panel comes to your hand. |
+| **Poke the panel** | Scenes; Move / Measure / Clear, ↶ / ↷ view, Reset view; Flip, Turn X / Y / Z (90°), Size − / +; Passthrough (in mixed reality), Auto spin, Reset orientation. |
+
+Objects (anything whose splats span less than 4 units) float in front of you about 0.8 m across, turning about their middle; places stay life size with you standing at their origin, which is usually where the capture camera was. The size is worked out from where the splats really are, leaving out the outer 2 %, so stray splats far out don't throw it off. Most splats are made in computer-vision axes, so they're turned the right way up by default; **Flip** and the quarter turns fix any that aren't, and each splat remembers how you turned and sized it. The panel moves like the others (the bar under it, its corner, palm up).
+
+Desktop preview: drag to pull the world, right-drag to turn around the splat, wheel to move closer or further; keys are listed on the page. This app uses three.js 0.180 (Spark needs it) through its own import map; the others stay on 0.170.
+
 ## Run it on your Quest 3
 
 WebXR needs a secure origin (HTTPS or `localhost`).
@@ -214,9 +233,9 @@ shared/             used by the home screen and every app
   closeGesture.js   right-hand thumbs down → close the app (home: leave XR)
   fistTwist.js      fist + twist as a knob (Scribe scrolling, Cinema scrubbing)
   sceneGrab.js      two-hand pinch → move / scale / turn an object (Plume's drawing)
-  navGrab.js        two-hand pinch → move / zoom / turn your view, via a camera "dolly" (Marionette, Rigger, Cinema, Pip)
+  navGrab.js        your view via a camera "dolly": two-hand move / zoom / turn (Marionette, Rigger, Cinema, Pip, Splat), one-hand pull (Splat)
   panelGrab.js      grab bar and corner grip to move / resize a floating panel (Marionette, Rigger, Plume)
-  palmDock.js       palm up held 1 s → the panel comes to your hand (Marionette, Rigger, Plume)
+  palmDock.js       palm up held 1 s → the panel comes to your hand (Marionette, Rigger, Plume, Splat)
   helpGesture.js    palm toward your eyes → help card
   undoGesture.js    peace sign held 1 s → undo (left hand) / redo (right hand)
   speech.js         speech recognition (built-in or Whisper) + voice activity gate (Scribe, Pip)
@@ -268,6 +287,11 @@ apps/rigger/
   src/pose.js       posing (FK, two-bone IK, planted hips), frames, onion skin, clips
   src/panel.js      the pokeable panel: steps, items, film strip, actions
   src/main.js       steps, gestures, mouse, XR
+apps/splat/
+  src/scene.js      loading splats (Spark), where they really are, object or place, orientation
+  src/measure.js    two-point measuring, kept on the splat
+  src/panel.js      the pokeable panel: scenes, tools, orientation, display
+  src/main.js       pulling the world, the two-hand view grab, spin, view history, mouse, XR
 apps/plume/
   src/brush.js      stroke geometry (ribbon, tube, glow), merging strokes into meshes
   src/doc.js        layers, frames, strokes, undo / redo, saving (IndexedDB)
