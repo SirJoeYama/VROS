@@ -12,6 +12,7 @@ const APPS = [
   { id: 'rigger', name: 'Rigger', blurb: 'rig any model, give it animations' },
   { id: 'plume', name: 'Plume', blurb: 'paint in the air, animate frame by frame' },
   { id: 'splat', name: 'Splat', blurb: 'walk through Gaussian splats' },
+  { id: 'mocap', name: 'Mocap', blurb: 'record your moves, animate characters in Rigger' },
 ];
 
 const grid = document.getElementById('grid');

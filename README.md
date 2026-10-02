@@ -18,7 +18,7 @@ Moving between the home screen and apps keeps you in the headset when the browse
 
 **The two-hand grab** (moving, zooming and turning the view, or the formation in Galaxies and the drawing in Plume) only starts when both hands pinch with their **palms facing up**, like holding something on your palms; two ordinary palm-down pinches never start it by accident. Once it's going it keeps going as your hands turn. Palms down, each hand pinches on its own: two gravity wells in Galaxies, painting with both hands in Plume.
 
-**Floating panels** (Marionette's timeline, Rigger, Plume and Splat) have two handles. Pinch the **bar** under the panel to carry it (it keeps its angle), pinch the **corner** (top right) and pull to resize it, or hold **both at once**, one hand on each, to turn it like a board: moving your hands moves it, and turning or tilting the line between them turns it any way. Or turn a palm up for a second (not both palms, and not while pinching) and the panel comes to your hand, facing you; it rides above your palm while you poke it with the other hand, and stays where it was when you lower your palm.
+**Floating panels** (Marionette's timeline, Rigger, Plume, Splat and Mocap) have two handles. Pinch the **bar** under the panel to carry it (it keeps its angle), pinch the **corner** (top right) and pull to resize it, or hold **both at once**, one hand on each, to turn it like a board: moving your hands moves it, and turning or tilting the line between them turns it any way. Or turn a palm up for a second (not both palms, and not while pinching) and the panel comes to your hand, facing you; it rides above your palm while you poke it with the other hand, and stays where it was when you lower your palm.
 
 **Help in XR:** hold an open hand up near eye height with the palm facing your eyes (like reading a note in your hand) for three seconds; do it again to hide it. It's deliberately long so it never pops up by accident; after the first second a faint ring by your palm fills up to show it's coming. With controllers, press B. The card shows the app's own gestures as tiles (an icon, the gesture, what it does), then a strip of the gestures every app shares (close, help, undo, and where the app has them the view grab, recenter, palm-up menu and panel bar), so those aren't repeated in each app's list. Apps with steps or modes show only what applies right now: in Rigger, the card for 3 FIT lists moving joints and resizing, the one for 5 POSE the handles and frames. A short tip about the gesture shows when you enter XR. The card is built from the page overlay's `<dl class="legend">` (one `<dt data-icon data-when>` / `<dd>` per gesture, the shared ones named in its `data-common`), and the page lists the shared ones under it too, so there is one list to keep up to date.
 
@@ -149,7 +149,7 @@ A panel floats in front of you with five steps; poke them in order:
    | **Turn model 90°** | For models that don't face the front. |
    | **Undo**, **Reset fit**, **See-through**, **Recenter** | |
 
-4. **Animate**: **Skin & animate** binds the model to the skeleton (after Mesh2Motion's solver: each vertex follows its nearest bone, with blended seams on the torso and one-sided blends at elbows and knees so bending doesn't dent the upper limb). Poke a clip to play it (the human library has about 180; the animals have 5 to 14 each). Fist + twist scrolls the list, a quick pinch pauses. **Weights** colours the model by bone to check the skinning. Tick ✓ the clips you want and poke **Export**: the rigged model plus those clips is saved to Downloads. **Import** brings in the animations from a GLB/GLTF file, such as one you exported from Rigger before (for another model with the same skeleton type) or one from Mesh2Motion: its tracks are matched to your skeleton by bone name, so a clip is only taken if at least half its bones match (the panel says why a file didn't fit). Rotations carry over as they are, and the hips are adapted from the file's skeleton to yours, so the clip plays at the right height even if you re-fit later. Imported clips show with ⤓, ticked for export, and are kept in the browser for that skeleton type; **Remove** deletes the one playing (it also deletes clips saved in 5 Pose). The browser can't show a file picker in XR, so import in window mode (**Import animations…**).
+4. **Animate**: **Skin & animate** binds the model to the skeleton (after Mesh2Motion's solver: each vertex follows its nearest bone, with blended seams on the torso and one-sided blends at elbows and knees so bending doesn't dent the upper limb). Poke a clip to play it (the human library has about 180; the animals have 5 to 14 each). Fist + twist scrolls the list, a quick pinch pauses. **Weights** colours the model by bone to check the skinning. Tick ✓ the clips you want and poke **Export**: the rigged model plus those clips is saved to Downloads. **Import** brings in the animations from a GLB/GLTF file, such as one you exported from Rigger before (for another model with the same skeleton type) or one from Mesh2Motion: its tracks are matched to your skeleton by bone name, so a clip is only taken if at least half its bones match (the panel says why a file didn't fit). Rotations carry over as they are, and the hips are adapted from the file's skeleton to yours, so the clip plays at the right height even if you re-fit later. Imported clips show with ⤓, ticked for export, and are kept in the browser for that skeleton type; **Remove** deletes the one playing (it also deletes clips saved in 5 Pose, and takes from Mocap). Takes recorded in **Mocap** show up here on their own for the human skeleton, marked ●, ticked for export. The browser can't show a file picker in XR, so import in window mode (**Import animations…**).
 5. **Pose**: make your own animation, frame by frame, like Marionette, on the rigged model itself.
 
    | Handle | What it does |
@@ -203,6 +203,25 @@ Walk through Gaussian splats: photoreal 3D captures of objects and places. Rende
 Objects (anything whose splats span less than 4 units) float in front of you about 0.8 m across, turning about their middle; places stay life size with you standing at their origin, which is usually where the capture camera was. The size is worked out from where the splats really are, leaving out the outer 2 %, so stray splats far out don't throw it off. Most splats are made in computer-vision axes, so they're turned the right way up by default; **Flip** and the quarter turns fix any that aren't, and each splat remembers how you turned and sized it. The panel moves like the others (the bar under it, its corner, palm up).
 
 Desktop preview: drag to pull the world, right-drag to turn around the splat, wheel to move closer or further; keys are listed on the page. This app uses three.js 0.180 (Spark needs it) through its own import map; the others stay on 0.170.
+
+## Mocap
+
+Motion capture with what the Quest tracks: your head, your hands and every finger (or the controllers), recorded at 30 frames a second and turned into animation for Rigger's human skeleton. A mannequin (Rigger's human sample, skinned the same way) follows you live and plays back your takes.
+
+1. **Calibrate**: poke **CALIBRATE** and, during the 3 s countdown, stand straight in a **T-pose**: arms out to the sides, palms down, looking ahead. That gives your eye height (the skeleton is scaled to it), which way is forward, your arm span, and how your head, wrists and fingers are turned when the skeleton is at rest. It's kept for next time.
+2. **Record**: poke **● RECORD**, get into place during the countdown, and perform. **■ STOP** ends it, or set a **LENGTH** (5, 10, 30 or 60 s). While counting down and recording, the gestures are off (a thumbs down or a peace sign is part of your performance), and the panel only answers STOP.
+3. **Trim and legs**: the take plays in a loop. Poke or drag the timeline to scrub, **SET IN** / **SET OUT** keep only part of it, **FULL** brings the whole take back. The headset can't see your legs, so pick them: **Planted** (the feet stay put and step to follow you when you move or turn away), or the legs of a library **Idle**, **Walk**, **Jog** or **Crouch**.
+4. **Use it in Rigger**: every take is saved in the browser, baked as a clip on the human template skeleton, and appears in Rigger's 4 Animate list (human skeleton) marked ●, ready to play on any model you rig with it and to export in its GLB. Edits to a take (trim, legs) update it there.
+
+How the body is worked out: the head drives the spine and neck (lean, turn, crouch: the hips drop as far as your eyes do) and the head bone; the body turns after the head, slowly; each hand reaches from its shoulder by two-bone IK (elbows down and back), scaled to the skeleton's arm so long or short arms still meet; the hand bone turns as your wrist does since calibrating; tracked fingers curl the finger bones joint by joint. Hand-tracking gaps (a hand out of view) are filled by easing between where it was last seen and where it reappears, and everything is smoothed a little. With controllers, the hands follow the controllers and the fingers stay open.
+
+| Gesture | Effect |
+| --- | --- |
+| **Poke the panel** | Calibrate, Record / Stop, Length, View (**Mirror**: in front of you, mirrored; **Facing**: in front, not mirrored; **Side**: beside you, in profile); Legs; the takes; Live, Play / Pause, Set in, Set out, Full, Delete. |
+| **Peace sign, held 1 s** | Left hand: undo; right hand: redo. Covers trims, legs, deleted takes and new ones. |
+| **Palm up, held 1 s** | The panel comes to your hand. |
+
+Desktop preview: recording needs the headset, but takes play back and can be trimmed with the mouse (click the panel, drag the timeline; Space, I / O, L, V, Delete, Ctrl+Z / Ctrl+Y).
 
 ## Quest controllers
 
@@ -259,8 +278,8 @@ shared/             used by the home screen and every app
   fistTwist.js      fist + twist as a knob (Scribe scrolling, Cinema scrubbing)
   sceneGrab.js      two-hand pinch → move / scale / turn an object (Plume's drawing)
   navGrab.js        your view: two-hand move / turn (a camera "dolly") and zoom (scaling a `world` group, so you stay life size and nothing floats), one-hand pull; in Marionette, Rigger, Cinema, Pip, Splat
-  panelGrab.js      the panel's two handles: bar = carry, corner = resize, both = turn it (Marionette, Rigger, Plume, Splat)
-  palmDock.js       palm up held 1 s → the panel comes to your hand (Marionette, Rigger, Plume, Splat)
+  panelGrab.js      the panel's two handles: bar = carry, corner = resize, both = turn it (Marionette, Rigger, Plume, Splat, Mocap)
+  palmDock.js       palm up held 1 s → the panel comes to your hand (Marionette, Rigger, Plume, Splat, Mocap)
   pointer.js        the controllers' laser pointer: press panels, remotes, buttons and icons from afar (every app)
   helpGesture.js    palm toward your eyes → help card
   undoGesture.js    peace sign held 1 s → undo (left hand) / redo (right hand)
@@ -318,6 +337,12 @@ apps/splat/
   src/measure.js    two-point measuring, kept on the splat
   src/panel.js      the pokeable panel: scenes, tools, orientation, display
   src/main.js       pulling the world, the two-hand view grab, spin, view history, mouse, XR
+apps/mocap/
+  src/capture.js    one tracked frame (head, wrists, 25 hand joints) packed in floats; gap filling and smoothing
+  src/solve.js      calibration, the body from head + hands (spine, two-bone IK arms, fingers, planted or library legs), baking a clip
+  src/takes.js      the takes, in the browser (IndexedDB), shared with Rigger
+  src/panel.js      the pokeable panel: capture, legs, takes, the timeline
+  src/main.js       the mannequin, countdowns, recording at 30 fps, playback, trim, undo, XR
 apps/plume/
   src/brush.js      stroke geometry (ribbon, tube, glow), merging strokes into meshes
   src/doc.js        layers, frames, strokes, undo / redo, saving (IndexedDB)
