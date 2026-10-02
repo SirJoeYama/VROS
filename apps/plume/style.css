@@ -26,3 +26,10 @@ button:disabled { opacity: 0.5; cursor: default; }
 @media (max-width: 480px) { #overlay { right: 16px; max-width: none; } .legend, .desk { display: none; } }
 #overlay { max-height: calc(100% - 32px); overflow-y: auto; }
 #export { width: 100%; }
+
+/* help legend: icons, and the shared gestures under it */
+.legend dt { white-space: nowrap; }
+.legend dt[data-icon]::before { content: attr(data-icon); display: inline-block; min-width: 1.6em; margin-right: 0.2em; }
+.common-title { margin: 12px 0 4px; color: var(--dim); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; }
+.legend.common dt { color: var(--dim); }
+@media (max-width: 480px) { .common-title { display: none; } }

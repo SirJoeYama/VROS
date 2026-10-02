@@ -188,10 +188,9 @@ export function startHomeXR(apps, button) {
   const closeGesture = new CloseGesture(renderer, null);
   scene.add(closeGesture.group);
   const help = new HelpGesture('VROS', [
-    ['Poke an icon', 'open that app'],
-    ['Right thumbs down (hold)', 'close an app, or leave XR here'],
-    ['Palm toward your eyes (hold)', 'show or hide help'],
-  ]);
+    { icon: '👉', key: 'Poke an icon', text: 'open that app' },
+    { icon: '👎', key: 'Right thumbs down', text: 'here: leave XR' },
+  ], { sub: 'home', common: [] });
   scene.add(help.group);
 
   const shelf = new HomeShelf(apps, (app) => setTimeout(() => location.assign(`apps/${app.id}/`), 120));

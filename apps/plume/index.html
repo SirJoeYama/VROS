@@ -25,20 +25,12 @@
     <button id="enter" disabled>Checking WebXR…</button>
     <div class="row"><button id="export">Export GLB</button></div>
     <p id="status"></p>
-    <dl class="legend">
-      <dt>Pinch and move</dt><dd>paint (or erase, with ERASE on the panel)</dd>
-      <dt>Pinch with both hands</dt><dd>move, scale and turn the drawing: zoom in for detail</dd>
-      <dt>Fist + twist</dt><dd>brush size, like a knob</dd>
-      <dt>Poke the panel</dt><dd>brush, colour, size, layers, frames, playback, export</dd>
-      <dt>Ribbon · tube · glow</dt><dd>flat like a calligraphy pen (turn your hand) · round · glowing</dd>
-      <dt>Layers</dt><dd>each has its own frames; a one-frame layer stays still while others animate</dd>
-      <dt>+ FRAME / DUPLICATE</dt><dd>a blank frame, or a copy to change a little · ONION shows the frames around</dd>
-      <dt>Palm up, held 1 s</dt><dd>the panel comes to your hand like a palette; paint and poke with the other hand · lower your palm and it stays there</dd>
-      <dt>Pinch the bar under the panel</dt><dd>carry it somewhere else · pinch its corner and pull to resize</dd>
-      <dt>Two fists, held 1 s</dt><dd>bring the panel back in front of you</dd>
-      <dt>Peace sign, held 1 s</dt><dd>left hand: undo · right hand: redo (keep holding to step again)</dd>
-      <dt>Right thumbs down (hold)</dt><dd>close the app, back to home</dd>
-      <dt>Palm toward your eyes (hold)</dt><dd>show or hide this help in XR</dd>
+    <dl class="legend" data-common="reset undo menu panel">
+      <dt data-icon="🤏">Pinch and move</dt><dd>paint (or erase)</dd>
+      <dt data-icon="🙌">Pinch both hands</dt><dd>move, scale, turn the drawing</dd>
+      <dt data-icon="✊">Fist + twist</dt><dd>brush size</dd>
+      <dt data-icon="✋">Turn your hand</dt><dd>tilts the ribbon brush</dd>
+      <dt data-icon="🎨">Panel</dt><dd>colour, brush, layers, frames, export</dd>
     </dl>
     <p class="desk">Desktop: drag to paint · click the panel · right-drag turns the drawing · wheel scales it · [ ] size · 1 2 3 brushes · B draw · E erase · Ctrl+Z / Ctrl+Y undo, redo · ←/→ frames · space play · N new frame · D duplicate · Del delete · O onion · F fps</p>
     <p class="desk">Your drawing is saved in this browser as you go.</p>

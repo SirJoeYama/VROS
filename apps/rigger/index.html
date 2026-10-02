@@ -31,24 +31,21 @@
       <label class="file">Import animations…<input id="animfile" type="file" accept=".glb,.gltf" /></label>
     </div>
     <p id="status"></p>
-    <dl class="legend">
-      <dt>Poke the panel</dt><dd>1 MODEL → 2 SKELETON → 3 FIT → 4 ANIMATE → 5 POSE; pick, toggle, play</dd>
-      <dt>Pinch a joint, move</dt><dd>fit: move the skeleton's joints into the model (MIRROR moves both sides)</dd>
-      <dt>Pose: amber spheres (FK)</dt><dd>bend the bone behind the joint; the rest follows</dd>
-      <dt>Pose: diamonds past hands / feet</dt><dd>IK (cyan): place the hand or foot, the elbow or knee follows · FK (amber): turn it · HANDS / FEET switch (front legs count as hands)</dd>
-      <dt>Pose: magenta cube · white ring</dt><dd>move the hips with the feet planted · move the whole body</dd>
-      <dt>Pose: + FRAME, SAVE AS CLIP</dt><dd>copy this pose into a new frame · turn the frames into a clip, kept in this browser and ticked for EXPORT</dd>
-      <dt>Fist + twist</dt><dd>fit: resize the skeleton · animate: scroll the clips · pose: step through frames</dd>
-      <dt>Pinch (a quick tap)</dt><dd>animate, pose: play / pause</dd>
-      <dt>Pinch empty space, both hands</dt><dd>look around: move your view, pull apart to zoom in, turn your hands to turn the view (the model never moves)</dd>
-      <dt>Palm up, held 1 s</dt><dd>the panel comes to your hand; poke it with the other hand · lower your palm and it stays there</dd>
-      <dt>Pinch the bar under the panel</dt><dd>carry it somewhere else · pinch its corner and pull to resize</dd>
-      <dt>Two fists, held 1 s</dt><dd>bring the model and panel back in front of you</dd>
-      <dt>Tick ✓ next to clips</dt><dd>choose what EXPORT GLB saves</dd>
-      <dt>IMPORT (window mode)</dt><dd>bring in animations from a GLB exported before (same skeleton type); they show with ⤓</dd>
-      <dt>Peace sign, held 1 s</dt><dd>left hand: undo · right hand: redo (keep holding to step again)</dd>
-      <dt>Right thumbs down (hold)</dt><dd>close the app, back to home</dd>
-      <dt>Palm toward your eyes (hold)</dt><dd>show or hide this help in XR</dd>
+    <dl class="legend" data-common="view reset undo menu panel">
+      <dt data-icon="👉">Poke the panel</dt><dd>pick, toggle, go to the next step</dd>
+      <dt data-icon="🤏" data-when="fit">Pinch a joint</dt><dd>move it into the model</dd>
+      <dt data-icon="🪞" data-when="fit">MIRROR</dt><dd>left and right move together</dd>
+      <dt data-icon="✊" data-when="fit">Fist + twist</dt><dd>resize the skeleton</dd>
+      <dt data-icon="🤏" data-when="animate pose">Quick pinch</dt><dd>play / pause</dd>
+      <dt data-icon="✊" data-when="animate">Fist + twist</dt><dd>scroll the clips</dd>
+      <dt data-icon="☑️" data-when="animate">✓ next to a clip</dt><dd>include it in EXPORT</dd>
+      <dt data-icon="📥" data-when="animate">IMPORT</dt><dd>clips from a GLB (window mode)</dd>
+      <dt data-icon="🟠" data-when="pose">Amber spheres</dt><dd>bend the bone behind (FK)</dd>
+      <dt data-icon="🔷" data-when="pose">Hand / foot diamonds</dt><dd>IK: place it · FK: turn it</dd>
+      <dt data-icon="🟪" data-when="pose">Magenta cube</dt><dd>hips; the feet stay planted</dd>
+      <dt data-icon="⚪" data-when="pose">Floor ring</dt><dd>move the whole body</dd>
+      <dt data-icon="✊" data-when="pose">Fist + twist</dt><dd>step through the frames</dd>
+      <dt data-icon="🎞️" data-when="pose">+ FRAME · SAVE AS CLIP</dt><dd>copy this pose · keep it for export</dd>
     </dl>
     <p class="desk">Desktop: click the panel · drag joints and handles · right-drag turns the model · wheel scales · drop a file on the page to open it · fit: Ctrl+Z undo, M mirror, C children · animate: space pause · pose: ←/→ frames, space play, N new frame, Del delete, O onion, H / J hands / feet IK⇄FK, S smooth, F fps</p>
     <p class="credit">Rigs, samples and animations from <a href="https://github.com/Mesh2Motion/mesh2motion-app" target="_blank" rel="noopener">Mesh2Motion</a> (CC0).</p>

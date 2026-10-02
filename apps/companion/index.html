@@ -37,16 +37,11 @@
       <button>Ask</button>
     </form>
     <p id="status"></p>
-    <dl class="legend">
-      <dt>Pinch (tap)</dt><dd>start or stop talking with Pip; while it answers, hush it</dd>
-      <dt>Just talk</dt><dd>Pip listens after each answer, so you can keep the conversation going</dd>
-      <dt>Poke the buttons</dt><dd>TALK · HUSH (stop the answer) · FORGET (clear the conversation)</dd>
-      <dt>Poke the screen</dt><dd>tickle Pip</dd>
-      <dt>Pinch with both hands</dt><dd>look around: move your view, pull apart to zoom in, turn your hands to turn the view (Pip stays put)</dd>
-      <dt>Two fists, held 1 s</dt><dd>back in front of Pip, at life size</dd>
-      <dt>Peace sign, held 1 s</dt><dd>left hand: undo · right hand: redo (keep holding to step again)</dd>
-      <dt>Right thumbs down (hold)</dt><dd>close the app, back to home</dd>
-      <dt>Palm toward your eyes (hold)</dt><dd>show or hide this help in XR</dd>
+    <dl class="legend" data-common="view reset undo">
+      <dt data-icon="🤏">Quick pinch</dt><dd>talk · stop · hush Pip</dd>
+      <dt data-icon="🗣️">Just talk</dt><dd>Pip listens again after each answer</dd>
+      <dt data-icon="👉">Buttons</dt><dd>TALK · HUSH · FORGET</dd>
+      <dt data-icon="👉">Screen</dt><dd>tickle Pip</dd>
     </dl>
     <p class="desk">Desktop: click the egg or Talk to speak, or type a question · Pip answers with Claude using your own API key, sent only to Anthropic</p>
   </div>
