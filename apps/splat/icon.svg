@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx=".5" cy=".4" r=".8"><stop offset="0" stop-color="#1a2440"/><stop offset="1" stop-color="#05060d"/></radialGradient>
+    <radialGradient id="s" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".55" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- soft overlapping Gaussian blobs forming a shape -->
+  <g style="mix-blend-mode:screen">
+    <ellipse cx="256" cy="230" rx="120" ry="70" transform="rotate(-20 256 230)" fill="url(#s)" opacity=".5"/>
+    <ellipse cx="200" cy="270" rx="70" ry="38" transform="rotate(30 200 270)" fill="#3cc8ff" fill-opacity=".55"/>
+    <ellipse cx="300" cy="250" rx="80" ry="42" transform="rotate(-35 300 250)" fill="#ff5ccf" fill-opacity=".5"/>
+    <ellipse cx="250" cy="200" rx="60" ry="30" transform="rotate(10 250 200)" fill="#ffd84a" fill-opacity=".55"/>
+    <ellipse cx="270" cy="310" rx="56" ry="26" transform="rotate(-8 270 310)" fill="#8be35a" fill-opacity=".5"/>
+    <ellipse cx="180" cy="200" rx="34" ry="18" transform="rotate(50 180 200)" fill="#8b5cff" fill-opacity=".6"/>
+    <ellipse cx="335" cy="185" rx="30" ry="16" transform="rotate(-50 335 185)" fill="#ff9a3c" fill-opacity=".6"/>
+  </g>
+  <!-- a pinch-and-pull hand hint -->
+  <path d="M120 420c40-30 90-30 130 0" fill="none" stroke="#dfe6ff" stroke-opacity=".6" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="250" cy="420" r="12" fill="#7fe7ff"/>
+</svg>

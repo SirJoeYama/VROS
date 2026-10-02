@@ -11,6 +11,7 @@ const APPS = [
   { id: 'companion', name: 'Pip', blurb: 'a pocket companion you can talk to' },
   { id: 'rigger', name: 'Rigger', blurb: 'rig any model, give it animations' },
   { id: 'plume', name: 'Plume', blurb: 'paint in the air, animate frame by frame' },
+  { id: 'splat', name: 'Splat', blurb: 'walk through Gaussian splats' },
 ];
 
 const grid = document.getElementById('grid');

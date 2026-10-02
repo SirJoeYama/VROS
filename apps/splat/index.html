@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#04050a" />
+  <title>Splat · VROS</title>
+  <link rel="manifest" href="../../manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <!-- Spark (Gaussian splatting for three.js) needs three 0.180 or newer; this
+       app has its own import map, so the other apps keep their version. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+        "@sparkjsdev/spark": "https://sparkjs.dev/releases/spark/2.3.1/spark.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="overlay">
+    <a class="home" href="../../">← Home</a>
+    <h1>SPLAT</h1>
+    <p class="sub">walk through Gaussian splats</p>
+    <button id="enter" disabled>Checking WebXR…</button>
+    <div class="row"><label class="file">Open a splat…<input id="file" type="file" /></label></div>
+    <div class="row"><input id="url" type="url" placeholder="or paste a link to a .ply / .spz / .splat / .ksplat" /><button id="load-url">Load</button></div>
+    <p id="status"></p>
+    <dl class="legend">
+      <dt>Pinch and move</dt><dd>grab the world and pull yourself through it</dd>
+      <dt>Pinch with both hands</dt><dd>move, zoom (pull apart / push together) and turn your view</dd>
+      <dt>Fist + twist</dt><dd>spin the splat like a turntable</dd>
+      <dt>MEASURE, then pinch</dt><dd>drop two points: the distance between them, in meters once the splat is the right size</dd>
+      <dt>Poke the panel</dt><dd>scenes, move / measure, flip and turn upside-down splats, size, passthrough, auto spin</dd>
+      <dt>Palm up, held 1 s</dt><dd>the panel comes to your hand · lower your palm and it stays there</dd>
+      <dt>Pinch the bar under the panel</dt><dd>carry it somewhere else · pinch its corner and pull to resize</dd>
+      <dt>Two fists, held 1 s</dt><dd>reset the view: life size, in front of you</dd>
+      <dt>Peace sign, held 1 s</dt><dd>left hand: undo · right hand: redo (where you were and how the splat sat)</dd>
+      <dt>Right thumbs down (hold)</dt><dd>close the app, back to home</dd>
+      <dt>Palm toward your eyes (hold)</dt><dd>show or hide this help in XR</dd>
+    </dl>
+    <p class="desk">Desktop: drag to pull the world · right-drag turns you around the splat · wheel moves closer / further · click the panel · F flip · X Y Z turn · − + size · S spin · R reset view · Ctrl+Z / Ctrl+Y undo, redo · drop a file on the page to open it</p>
+    <p class="credit">Rendering by <a href="https://sparkjs.dev" target="_blank" rel="noopener">Spark</a>; sample scenes from its examples.</p>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
