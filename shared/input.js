@@ -14,6 +14,7 @@ const WRIST = 0, THUMB_TIP = 4, INDEX_TIP = 9;
 const FINGERS = [[6, 9], [11, 14], [16, 19], [21, 24]]; // [knuckle, tip]
 
 const PINCH_ON = 0.018, PINCH_OFF = 0.035;
+const TIP = 0.02; // a controller's tip: this far past the front of the controller, along its ray (m)
 
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3();
 
@@ -244,6 +245,14 @@ export class Input {
           st.rayOrigin.set(q.x, q.y, q.z);
           st.rayDir.copy(st.palmNormal);
         }
+        // The controller's "fingertip" (where it pinches, draws, touches): just
+        // past its front, along the pointing ray, so it stays fixed to the
+        // controller however you hold or turn it (the grip's own axis slants
+        // down and back on Quest, which made a point placed along it drift).
+        st.pinchPoint.copy(st.rayOrigin).addScaledVector(st.rayDir, TIP);
+        st.palmCenter.copy(st.pinchPoint);
+        st.indexTip.copy(st.pinchPoint);
+        st.joints[0] = st.pinchPoint.x; st.joints[1] = st.pinchPoint.y; st.joints[2] = st.pinchPoint.z;
         const ax = src.gamepad?.axes || [];
         st.stick.set(ax[2] || 0, -(ax[3] || 0));
         const edge = (i, name) => {
