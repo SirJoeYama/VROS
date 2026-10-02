@@ -9,10 +9,12 @@ const UP = new THREE.Vector3(0, 1, 0);
 const _p = new THREE.Vector3(), _eye = new THREE.Vector3(), _s = new THREE.Vector3();
 
 // Palm up for a second and the menu comes to your hand, like the dock in
-// Galaxies: it rides just above your palm, facing you, and you poke it with
-// your other hand. Lower your palm and it stays where it was, in the air,
-// and keeps turning to face you as you move around, so it's always easy to
-// read and poke (until the app recenters it).
+// Galaxies: it turns to face you as it arrives, then rides just above your
+// palm (without turning) while you poke it with your other hand. Lower your
+// palm and it stays where it was, in the air. To turn it, hold its two
+// handles (see PanelGrab).
+// It doesn't come while both palms are up or a hand is pinching: that's the
+// two-hand grab getting ready.
 // The left hand is preferred when both are up.
 // `target` moves (the panel or a group holding it); `panel` is the panel mesh,
 // `height` its unscaled height, so its bottom edge can sit above the palm.
@@ -31,7 +33,6 @@ export class PalmDock {
     this.hold = 0;
     this.hand = null; // id of the hand the menu is on
     this.lost = 0;
-    this.facing = false; // brought to your hand: keeps turning to face you
 
     const pts = [];
     for (let i = 0; i <= SEGMENTS; i++) {
@@ -52,12 +53,10 @@ export class PalmDock {
     return this.hand !== null;
   }
 
-  // Take the menu off the palm (e.g. when the app recenters it); it stops
-  // turning to follow you, so the app can place it.
+  // Take the menu off the palm (e.g. when the app recenters it).
   release() {
     this.hand = null;
     this.hold = 0;
-    this.facing = false;
   }
 
   // Returns the hand that's holding (or summoning) the menu, so the app can
@@ -85,19 +84,17 @@ export class PalmDock {
     }
 
     const h = hands.find((x) => up(x) && x.handedness === 'left') || hands.find(up);
-    if (h && !this.busy()) {
+    const grabbing = hands.filter(up).length > 1 || hands.some((x) => x.kind === 'hand' && x.pinch);
+    if (h && !this.busy() && !grabbing) {
       this.hold += dt;
       if (this.hold >= HOLD) {
         if (this.detach && this.target.parent !== this.detach) this.detach.attach(this.target);
         this.hand = h.id;
         this.lost = 0;
-        this.facing = true;
         this.onMove();
         this._follow(h, k, true);
       }
     } else this.hold = Math.max(0, this.hold - dt * 3);
-
-    if (this.facing && !this.docked && !this.busy()) this._face(dt);
 
     const p = Math.min(1, this.hold / HOLD);
     this.ring.visible = !!h && !this.docked && p > 0.05;
@@ -111,19 +108,10 @@ export class PalmDock {
     return h || null;
   }
 
-  // Turn smoothly to face your eyes, staying where it is.
-  _face(dt) {
-    const t = this.target;
-    const from = t.quaternion.clone();
-    t.lookAt(_eye);
-    const to = t.quaternion.clone();
-    t.quaternion.copy(from).slerp(to, 1 - Math.exp(-dt * 8));
-    t.updateMatrixWorld(true);
-  }
-
   // The panel's middle goes half its height (plus a gap) above the palm, a
-  // little toward you so it clears your fingers; it faces you. Smoothed, so
-  // hand-tracking jitter doesn't shake it.
+  // little toward you so it clears your fingers. It turns to face you only as
+  // it arrives (`snap`); after that only its position follows the palm,
+  // smoothed so hand-tracking jitter doesn't shake it.
   _follow(h, k, snap = false) {
     const half = (this.height / 2) * this.panel.getWorldScale(_s).y;
     _p.copy(h.palmCenter).addScaledVector(UP, LIFT * k + half);
@@ -135,7 +123,7 @@ export class PalmDock {
     world.lerp(_p, snap ? 1 : 0.35);
     if (parent) parent.worldToLocal(world);
     this.target.position.copy(world);
-    this.target.lookAt(_eye);
+    if (snap) this.target.lookAt(_eye);
     this.target.updateMatrixWorld(true);
   }
 }
