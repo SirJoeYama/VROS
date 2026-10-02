@@ -15,7 +15,7 @@ import { EditRig, SkeletonView } from './skeleton.js';
 import { Rigged, loadLibrary, download, importAnimations } from './rigged.js';
 import * as store from './store.js';
 import { Poser } from './pose.js';
-import { Panel, PANEL_W, PANEL_H } from './panel.js';
+import { Panel, PANEL_W, PANEL_H, STEPS } from './panel.js';
 
 const BG = new THREE.Color(0x04050a);
 const FIT_SIZE = 0.9; // the model is first shown this big (m, largest side)
@@ -950,6 +950,9 @@ renderer.setAnimationLoop((time, frame) => {
   for (const ev of input.events) if (ev === 'recenter') recenter();
 
   const viewer = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
+  // The help card shows the gestures for the step you're on.
+  const stepName = STEPS.find(([id]) => id === S.step)?.[1].toLowerCase(); // "3 fit"
+  help.setContext(S.step, stepName ? `step ${stepName.replace(' ', ' · ')}` : '');
   const helpHand = help.update(input.hands, dt, viewer);
   closeGesture.update(input.hands, dt, viewer);
   const peace = undoGesture.update(input.hands, dt, viewer);
