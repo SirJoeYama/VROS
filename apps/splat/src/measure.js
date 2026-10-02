@@ -6,11 +6,13 @@ const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _eye = new THREE.Vecto
 // Measuring: pinch to drop a point, pinch again for the second; the line
 // between them shows its length. A third pinch starts a new measurement.
 // Points are kept in the splat's own space (`space`), so they stay on it
-// when you spin, turn or scale it; lengths are in the room's meters, so
-// they're real sizes once the splat is the right size.
+// when you spin, turn or scale it. Lengths are measured in `ref` (the world
+// group the view zooms), so zooming doesn't change them: they're meters at
+// life size, real sizes once the splat is the right size.
 export class Measure {
-  constructor(space) {
+  constructor(space, ref) {
     this.space = space;
+    this.ref = ref;
     this.points = []; // in `space`
     this.group = new THREE.Group();
     this.dots = [0, 1].map(() => {
@@ -50,7 +52,9 @@ export class Measure {
 
   get length() {
     if (this.points.length < 2) return null;
-    return this.space.localToWorld(_a.copy(this.points[0])).distanceTo(this.space.localToWorld(_b.copy(this.points[1])));
+    const a = this.ref.worldToLocal(this.space.localToWorld(_a.copy(this.points[0])));
+    const b = this.ref.worldToLocal(this.space.localToWorld(_b.copy(this.points[1])));
+    return a.distanceTo(b);
   }
 
   // `k`: your size in the world, so the dots and label look the same size at any zoom.
@@ -70,7 +74,7 @@ export class Measure {
     this.line.geometry.attributes.position.setXYZ(0, ...pts[0].toArray());
     this.line.geometry.attributes.position.setXYZ(1, ...pts[1].toArray());
     this.line.geometry.attributes.position.needsUpdate = true;
-    const len = pts[0].distanceTo(pts[1]);
+    const len = this.length;
     const text = len < 1 ? `${(len * 100).toFixed(1)} cm` : `${len.toFixed(2)} m`;
     if (text !== this._text) this._draw((this._text = text));
     this.label.position.copy(pts[0]).add(pts[1]).multiplyScalar(0.5);

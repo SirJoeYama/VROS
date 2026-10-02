@@ -10,7 +10,7 @@ const EMOJI = '"Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-s
 // `data-common` (close and help are always there), and they're shown as a
 // compact strip under the app's own gestures instead of repeating them.
 export const COMMON = {
-  view: ['🙌', 'Pinch both hands', 'move · zoom · turn the view'],
+  view: ['🙌', 'Both palms up, pinch', 'move · zoom · turn the view'],
   reset: ['✊✊', 'Two fists, 1 s', 'back in front of you'],
   menu: ['🤲', 'Palm up, 1 s', 'panel to your hand'],
   panel: ['🤏', 'Bar under the panel', 'carry it · corner: resize'],

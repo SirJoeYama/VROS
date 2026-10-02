@@ -16,6 +16,8 @@ Moving between the home screen and apps keeps you in the headset when the browse
 
 **Undo and redo, everywhere:** make a peace sign (index and middle fingers up in a V, the others curled) and hold it for a second. With the **left hand** it undoes, with the **right hand** it redoes; keep holding and it steps again about every half second. A ring fills around your hand while you hold, and a label says what happened ("Undo", "Nothing to undo", …). Plume undoes strokes, erasing and frame and layer changes; Scribe undoes text; Marionette and Rigger's Pose step undo poses and frame changes; Rigger's Fit step undoes skeleton edits. The other apps have nothing to undo and just say so.
 
+**The two-hand grab** (moving, zooming and turning the view, or the formation in Galaxies and the drawing in Plume) only starts when both hands pinch with their **palms facing up**, like holding something on your palms; two ordinary palm-down pinches never start it by accident. Once it's going it keeps going as your hands turn. Palms down, each hand pinches on its own: two gravity wells in Galaxies, painting with both hands in Plume.
+
 **Help in XR:** hold an open hand up near eye height with the palm facing your eyes (like reading a note in your hand) for half a second; do it again to hide it. The card shows the app's own gestures as tiles (an icon, the gesture, what it does), then a strip of the gestures every app shares (close, help, undo, and where the app has them the view grab, recenter, palm-up menu and panel bar), so those aren't repeated in each app's list. Apps with steps or modes show only what applies right now: in Rigger, the card for 3 FIT lists moving joints and resizing, the one for 5 POSE the handles and frames. A short tip about the gesture shows when you enter XR. The card is built from the page overlay's `<dl class="legend">` (one `<dt data-icon data-when>` / `<dd>` per gesture, the shared ones named in its `data-common`), and the page lists the shared ones under it too, so there is one list to keep up to date.
 
 To add an app, create `apps/<id>/` with an `index.html` and an `icon.svg`, then add an entry to the `APPS` list in `home.js`.
@@ -31,7 +33,7 @@ The first app: generative particle formations you shape with your hands.
 | **Pinch** | Creates a gravity well: particles swirl in and follow your fingers. Release and they spring home. |
 | **Open palm** | Wind: pushes and swirls the field in the direction your palm faces. Sweep to throw particles. |
 | **Fist** | Stillness: the simulation slows almost to a stop. |
-| **Pinch with both hands** | Grabs the whole formation: move, scale (pull apart / push together) and turn it. |
+| **Pinch with both hands, palms up** | Grabs the whole formation: move, scale (pull apart / push together) and turn it. |
 | **Palm up** | Summons the app dock (glowing orbs) plus a clock above your palm. Poke an orb with your other index finger to launch that app. |
 | **Two fists, held ~1 s** | Recenters the formation in front of you. |
 
@@ -88,11 +90,11 @@ Stop-motion animation in XR: pose a jointed puppet on a small stage, capture the
 | **Magenta cube** (hips) | Moves the hips while the feet stay planted: the legs re-solve by IK. |
 | **White ring on the floor** | Moves the whole puppet. |
 
-**Looking around.** Pinch empty space with both hands to move your view (the camera), not the puppet: move your hands to travel, pull them apart to zoom in (you get smaller and the stage bigger, down to 1/10 of your size) or together to zoom out (up to 10×), and turn them to turn the view around you; the floor stays level. The puppet, stage and poses never change, and the timeline stays with you. Two fists or a controller's thumbstick click recenters, back to life size. Handles, grab distances and gestures keep the same size to your hands at any zoom. On the desktop, the wheel still scales the stage and the timeline follows it.
+**Looking around.** Pinch empty space with both hands, palms up, to move your view (the camera), not the puppet: move your hands to travel, pull them apart to zoom in (the stage gets bigger, up to 10×) or together to zoom out (down to 1/10), and turn them to turn the view around you; the floor stays level. Zooming scales the view of the world, never you: you stay life size, so everything stays put in your room when you move your head. The puppet's pose and the frames never change, and the timeline stays with you. Two fists or a controller's thumbstick click recenters, back to no zoom. Handles, grab distances and gestures keep the same size to your hands at any zoom. On the desktop, the wheel still scales the stage and the timeline follows it.
 
 The skeleton is a hierarchy: hips → spine → chest → neck → head, chest → shoulders → elbows → hands, hips → hip joints → knees → feet. Both hands can hold handles at once.
 
-**Timeline.** A film strip in front of the stage, poked with a finger. Pinch the bar under it to carry it somewhere else, or pinch its bottom-right corner and pull to resize it; once moved it stays put until you recenter. Or turn a palm up and hold it for a second (a ring fills above your palm): the timeline comes to your hand, like the dock in Galaxies, and rides just above your palm while you poke it with the other hand; lower your palm and it stays where it was. On it: frame cells with stick-figure thumbnails (poke to jump), **PREV / PLAY / NEXT**, **+ FRAME** (copies the current pose into a new frame after it: the stop-motion step), **DELETE**, **HANDS** / **FEET** (IK or FK for the tips), **ONION** (see-through ghosts of the previous frame in red and the next in blue) and **FPS** (4, 6, 8, 12 or 24). Playback shows each pose as is, with no in-betweens. The animation is saved in the browser.
+**Timeline.** A film strip in front of the stage, poked with a finger. Pinch the bar under it to carry it somewhere else, or pinch its bottom-right corner and pull to resize it; once moved it stays put until you recenter. Or turn a palm up and hold it for a second (a ring fills above your palm): the timeline comes to your hand, like the dock in Galaxies, and rides just above your palm while you poke it with the other hand; lower your palm and it stays where it was, turning to keep facing you as you move. On it: frame cells with stick-figure thumbnails (poke to jump), **PREV / PLAY / NEXT**, **+ FRAME** (copies the current pose into a new frame after it: the stop-motion step), **DELETE**, **HANDS** / **FEET** (IK or FK for the tips), **ONION** (see-through ghosts of the previous frame in red and the next in blue) and **FPS** (4, 6, 8, 12 or 24). Playback shows each pose as is, with no in-betweens. The animation is saved in the browser.
 
 Desktop preview: drag handles with the mouse, scale the scene with the wheel, click the timeline; keys ←/→ frames, space play, N new frame, Delete, O onion, H / J hands / feet IK⇄FK, F fps.
 
@@ -104,7 +106,7 @@ A media player on a big floating screen, controlled with your hands.
 | --- | --- |
 | **Pinch (a quick tap)** | Play / pause. |
 | **Fist + twist** | A jog dial: clockwise fast-forwards, counter-clockwise rewinds. One full turn is one minute; the screen shows how far you've gone. |
-| **Pinch with both hands** | Look around: move your view (the camera), pull apart to zoom in, push together to zoom out, turn your hands to turn the view. The screen stays where it is; the remote stays with you. |
+| **Pinch with both hands, palms up** | Look around: move your view (the camera), pull apart to zoom in, push together to zoom out, turn your hands to turn the view. The screen stays where it is; the remote stays with you. |
 | **Two fists, held ~1 s** | Back in front of the screen, at life size. (The jog dial only answers one fist.) |
 | **Remote** (a small panel near your hands) | Poke: previous · −10 s · play/pause · +10 s · next, or poke the progress bar to jump there. |
 
@@ -120,7 +122,7 @@ A pocket companion that lives in a little egg-shaped gadget with a pixel screen,
 | **Just talk** | After each answer Pip listens again, so you can keep the conversation going. It stops after 30 s of silence. |
 | **Poke the buttons** | TALK · HUSH (stop the answer) · FORGET (clear the conversation). |
 | **Poke the screen** | Tickle Pip. |
-| **Pinch with both hands** | Look around: move your view (the camera), pull apart to zoom in, push together to zoom out, turn your hands to turn the view. Pip stays where it is. |
+| **Pinch with both hands, palms up** | Look around: move your view (the camera), pull apart to zoom in, push together to zoom out, turn your hands to turn the view. Pip stays where it is. |
 | **Two fists, held ~1 s** | Back in front of Pip, at life size. |
 
 The screen shows what Pip is doing: listening (antenna blinking, sound waves), thinking, searching the web (a globe), speaking (a moving mouth), or asleep after a while with nothing to do. A speech bubble above the egg shows what it heard and its answer.
@@ -157,7 +159,7 @@ A panel floats in front of you with five steps; poke them in order:
 
    The film strip shows every frame (poke one to go there). **+ Frame** copies this pose into a new frame after it; **Prev / Play / Next**, **Delete**, **Onion skin** (skeletons of the previous frame in red and the next in blue), **FPS** (4 to 30), **Smooth / Stepped** (in-betweens on playback, or stop-motion), **Clip pose** (copy the pose of the clip last played in 4 Animate, to start from it), **Reset pose**, **New animation** (press twice). Fist + twist steps through the frames. **Save as clip** adds the frames as "My animation N" to the top of 4 Animate, ticked for export; **Export** is on this step's panel too. Saved clips and the frames are kept in the browser for each skeleton type, so they're still there after a reload or after closing the app, and come back whenever you skin a model with that skeleton. To delete a saved clip, play it in 4 Animate and poke **Remove ★**.
 
-Pinch the bar under the panel to carry it somewhere else, or pinch its bottom-right corner and pull to resize it; it stays where you put it. Or turn a palm up and hold it for a second: the panel comes to your hand, like the dock in Galaxies, and rides just above your palm while you poke it with the other hand; lower your palm and it stays there. Pinch empty space with both hands to look around: this moves your view (the camera), never the model, so the fit, the skin and the poses don't change. Move your hands to travel, pull them apart to zoom in, push them together to zoom out, turn them to turn the view; the floor stays level, and the panel stays with you. Two fists held for a second (or **Recenter**) bring the model and panel back in front of you at life size. Desktop preview: click the panel, drag joints and handles, right-drag to turn the model, wheel to scale; keys are listed on the page.
+Pinch the bar under the panel to carry it somewhere else, or pinch its bottom-right corner and pull to resize it; it stays where you put it. Or turn a palm up and hold it for a second: the panel comes to your hand, like the dock in Galaxies, and rides just above your palm while you poke it with the other hand; lower your palm and it stays there, turning to keep facing you. Pinch empty space with both hands, palms up, to look around: this moves your view (the camera), never the model, so the fit, the skin and the poses don't change. Move your hands to travel, pull them apart to zoom in, push them together to zoom out, turn them to turn the view; the floor stays level, and the panel stays with you. Two fists held for a second (or **Recenter**) bring the model and panel back in front of you at life size. Desktop preview: click the panel, drag joints and handles, right-drag to turn the model, wheel to scale; keys are listed on the page.
 
 The skeletons, sample models and animations are Mesh2Motion's (CC0), in `apps/rigger/assets/`; the skinning is a port of its solver (MIT).
 
@@ -168,13 +170,13 @@ Paint in the air and animate it frame by frame, in the spirit of VR painting and
 | Gesture | Effect |
 | --- | --- |
 | **Pinch and move** | Paint. With **Erase** on, pinch and sweep through strokes to remove them (one sweep is one undo). |
-| **Pinch with both hands** | Move, scale and turn the whole drawing: pull it close and zoom in to paint fine detail, or step back to see it all. Strokes are as wide as the brush in the room, so painting zoomed in gives finer lines. |
+| **Pinch with both hands, palms up** | Move, scale and turn the whole drawing: pull it close and zoom in to paint fine detail, or step back to see it all. Strokes are as wide as the brush in the room, so painting zoomed in gives finer lines. |
 | **Fist + twist** | Brush size, like a knob. |
 | **Poke the panel** | Everything else (below). |
 
 **Brushes:** **Ribbon**, a flat band that lies the way your hand is turned (like a calligraphy pen); **Tube**, round; **Glow**, round, see-through and additive. With controllers, the trigger is pressure: press harder for a wider line.
 
-**The panel:** Draw / Erase, the brushes, Undo / Redo; a colour square, hue bar and 16 swatches; the size slider; **Layers** (up to six: poke one to draw on it, ◉ to show or hide it, + / − Layer); the active layer's **frames** (poke one to go there); ◀ Prev, ▶ Play, Next ▶, **+ Frame** (blank), **Duplicate** (a copy to change a little), **Delete**, **Onion** (the previous frame in red and the next in blue), **FPS**; **New drawing** (press twice), **Recenter**, **Export GLB**. Pinch the bar under the panel to carry it, or its corner to resize it; or turn a palm up and hold it for a second and the panel comes to your hand like a painter's palette (it rides above your palm while you paint and poke with the other hand; lower your palm and it stays where it was). Two fists held a second bring it back.
+**The panel:** Draw / Erase, the brushes, Undo / Redo; a colour square, hue bar and 16 swatches; the size slider; **Layers** (up to six: poke one to draw on it, ◉ to show or hide it, + / − Layer); the active layer's **frames** (poke one to go there); ◀ Prev, ▶ Play, Next ▶, **+ Frame** (blank), **Duplicate** (a copy to change a little), **Delete**, **Onion** (the previous frame in red and the next in blue), **FPS**; **New drawing** (press twice), **Recenter**, **Export GLB**. Pinch the bar under the panel to carry it, or its corner to resize it; or turn a palm up and hold it for a second and the panel comes to your hand like a painter's palette (it rides above your palm while you paint and poke with the other hand; lower your palm and it stays where it was, turning to keep facing you). Two fists held a second bring it back.
 
 **Animation:** every layer has its own frames, and the playhead shows frame *t* mod the layer's length. A one-frame layer is a still background while the others animate, and layers of different lengths loop on their own. **Export GLB** saves the drawing with a node per frame and one stepped animation that switches them; viewers without animation show frame 1. The drawing is saved in the browser (IndexedDB) as you go.
 
@@ -187,7 +189,7 @@ Walk through Gaussian splats: photoreal 3D captures of objects and places. Rende
 | Gesture | Effect |
 | --- | --- |
 | **Pinch and move** | Grab the world and pull yourself through it: the spot you pinched stays under your fingers. |
-| **Pinch with both hands** | Move, zoom (pull apart to get smaller and see detail, push together to get bigger and see it all) and turn your view. The floor stays level. |
+| **Pinch with both hands, palms up** | Move, zoom (pull apart to enlarge the world and see detail, push together to shrink it and see it all) and turn your view. The floor stays level. Zooming scales the world, not you: you stay life size, so the splat stays put in your room when you move your head. |
 | **Fist + twist** | Spin the splat like a turntable. |
 | **MEASURE, then pinch** | Drop two points: the line between them shows its length, in meters once the splat is the right size (use SIZE − / + to calibrate it against something you know). A third pinch starts again. |
 | **Peace sign, held 1 s** | Left hand: undo; right hand: redo. Covers where you were (every pull, grab and reset) and how the splat sits (flips, turns, size, spin). |
@@ -233,9 +235,9 @@ shared/             used by the home screen and every app
   closeGesture.js   right-hand thumbs down → close the app (home: leave XR)
   fistTwist.js      fist + twist as a knob (Scribe scrolling, Cinema scrubbing)
   sceneGrab.js      two-hand pinch → move / scale / turn an object (Plume's drawing)
-  navGrab.js        your view via a camera "dolly": two-hand move / zoom / turn (Marionette, Rigger, Cinema, Pip, Splat), one-hand pull (Splat)
+  navGrab.js        your view: two-hand move / turn (a camera "dolly") and zoom (scaling a `world` group, so you stay life size and nothing floats), one-hand pull; in Marionette, Rigger, Cinema, Pip, Splat
   panelGrab.js      grab bar and corner grip to move / resize a floating panel (Marionette, Rigger, Plume)
-  palmDock.js       palm up held 1 s → the panel comes to your hand (Marionette, Rigger, Plume, Splat)
+  palmDock.js       palm up held 1 s → the panel comes to your hand, then keeps facing you (Marionette, Rigger, Plume, Splat)
   helpGesture.js    palm toward your eyes → help card
   undoGesture.js    peace sign held 1 s → undo (left hand) / redo (right hand)
   speech.js         speech recognition (built-in or Whisper) + voice activity gate (Scribe, Pip)
