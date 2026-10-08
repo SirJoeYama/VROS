@@ -13,6 +13,7 @@ const APPS = [
   { id: 'plume', name: 'Plume', blurb: 'paint in the air, animate frame by frame' },
   { id: 'splat', name: 'Splat', blurb: 'walk through Gaussian splats' },
   { id: 'mocap', name: 'Mocap', blurb: 'record your moves, animate characters in Rigger' },
+  { id: 'squash', name: 'Squash', blurb: 'cube squash: rally a ball against the wall' },
 ];
 
 const grid = document.getElementById('grid');

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#04050a" />
+  <title>Squash · VROS</title>
+  <link rel="manifest" href="../../manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="overlay">
+    <a class="home" href="../../">← Home</a>
+    <h1>SQUASH</h1>
+    <p class="sub">cube squash: a cube in each hand, rally against the wall</p>
+    <button id="enter" disabled>Checking WebXR…</button>
+    <p id="status"></p>
+    <p id="score"></p>
+    <dl class="legend" data-common="reset undo">
+      <dt data-icon="🧊">Swing a cube</dt><dd>hit the ball; swing faster for a harder shot</dd>
+      <dt data-icon="🎯">Front wall</dt><dd>+1 each time your shot reaches it</dd>
+      <dt data-icon="🤏">Pinch</dt><dd>serve · restart after game over</dd>
+      <dt data-icon="🔫" data-when="pads">Trigger</dt><dd>serve · restart after game over</dd>
+    </dl>
+    <p class="desk">Desktop: move the mouse to steer the magenta cube · click to serve · two bounces or a ball past you costs a life</p>
+  </div>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

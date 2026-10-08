@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="#1b1f45"/><stop offset="1" stop-color="#05060d"/></radialGradient>
+    <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- court in perspective: front wall and the side edges -->
+  <path d="M176 120h160v150H176z" fill="none" stroke="#00f6ff" stroke-width="6"/>
+  <path d="M176 120L60 40M336 120L452 40M176 270L60 420M336 270L452 420" stroke="#00f6ff" stroke-width="6" opacity=".7"/>
+  <path d="M176 246h160" stroke="#ff2266" stroke-width="5"/>
+  <!-- ball with its trail -->
+  <path d="M262 198L330 300" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity=".25"/>
+  <circle cx="256" cy="190" r="40" fill="url(#glow)"/>
+  <rect x="242" y="176" width="28" height="28" rx="3" fill="#fff" transform="rotate(20 256 190)"/>
+  <!-- paddles: cyan and magenta cubes -->
+  <g transform="translate(120 330) rotate(-12)">
+    <path d="M0 22l22-22h70l-22 22z" fill="#7ffaff"/><path d="M70 22l22-22v70l-22 22z" fill="#00a8b0"/>
+    <rect y="22" width="70" height="70" fill="#00f6ff"/>
+  </g>
+  <g transform="translate(310 320) rotate(12)">
+    <path d="M0 22l22-22h70l-22 22z" fill="#ff8be9"/><path d="M70 22l22-22v70l-22 22z" fill="#b01790"/>
+    <rect y="22" width="70" height="70" fill="#ff2bd6"/>
+  </g>
+</svg>

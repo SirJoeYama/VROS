@@ -223,6 +223,22 @@ How the body is worked out: the head drives the spine and neck (lean, turn, crou
 
 Desktop preview: recording needs the headset, but takes play back and can be trimmed with the mouse (click the panel, drag the timeline; Space, I / O, L, V, Delete, Ctrl+Z / Ctrl+Y).
 
+## Squash
+
+Cube squash, solo: you stand in a closed neon court with a cube in each hand (cyan left, magenta right) and rally a small white cube against the front wall, about 6 m ahead.
+
+| Gesture | Effect |
+| --- | --- |
+| **Pinch** (trigger on controllers) | Serve: the ball appears floating in front of you. After game over, restarts. |
+| **Swing a cube through the ball** | Hit it. How fast you swing is how fast it goes; hitting off-centre angles and spins it. |
+| **Two fists, held ~1 s** (right stick click) | Puts the court back around you, facing where you look. Only between rallies: a fist is how you hold a cube. |
+
+Each shot that reaches the front wall is a point; the rally ends when the ball bounces twice on the floor or gets past you, and that costs one of three lives. The rally, lives and best score are on the board above the front wall; the best is kept in the browser. The ball speeds up as the rally grows, and front-wall rebounds are steered partly back toward you so a solo rally can keep going (`RETURN_ASSIST` in `apps/squash/src/config.js`, with the court size, gravity, damping, speeds and sizes; 0 is pure physics). Controllers rumble on every hit, harder for harder hits; the sounds are made on the fly (a tock for hits, a thud for the walls, a chime for points).
+
+With hands, the cube floats just in front of your palm; with controllers, just past the tip. The paddle's path between frames is checked in steps, so fast swings can't pass through the ball.
+
+Desktop preview: the mouse moves the magenta cube on a plane in front of you and a click serves; a mouse can't swing, so its hits always go forward.
+
 ## Quest controllers
 
 Every app works with Quest 3 controllers as well as hands, with the same mapping everywhere:
@@ -343,6 +359,14 @@ apps/mocap/
   src/takes.js      the takes, in the browser (IndexedDB), shared with Rigger
   src/panel.js      the pokeable panel: capture, legs, takes, the timeline
   src/main.js       the mannequin, countdowns, recording at 30 fps, playback, trim, undo, XR
+apps/squash/
+  src/config.js     tunable constants: court, physics, speeds, sizes, rules
+  src/court.js      the court (walls, neon edges, grid, squash lines) and impact flashes
+  src/paddles.js    a cube paddle: pose, velocity from a short history, hit glow
+  src/game.js       the ball, swept paddle hits, bounces, rules and scoring, trail
+  src/audio.js      procedural sounds (Web Audio)
+  src/scoreboard.js the board above the front wall
+  src/main.js       placing the court around you, paddles from hands / controllers / mouse, XR
 apps/plume/
   src/brush.js      stroke geometry (ribbon, tube, glow), merging strokes into meshes
   src/doc.js        layers, frames, strokes, undo / redo, saving (IndexedDB)
