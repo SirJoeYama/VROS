@@ -92,6 +92,12 @@ export class Sfx {
     this._tone('sine', 2093, 2093, 0.07, 0.9, undefined, 0.12);
   }
 
+  // the front wall moving in: a low falling sweep
+  shrink() {
+    this._tone('sawtooth', 240, 90, 0.1, 0.7);
+    this._tone('sine', 120, 50, 0.3, 0.8);
+  }
+
   serve() { this._tone('sine', 520, 780, 0.15, 0.12); }
 
   miss() { this._tone('triangle', 320, 110, 0.25, 0.45); }

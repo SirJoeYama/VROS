@@ -7,7 +7,7 @@ import { HelpGesture } from '../../../shared/helpGesture.js';
 import { setupEnterXR } from '../../../shared/xr.js';
 import { Pointer } from '../../../shared/pointer.js';
 import { CFG, COLORS, clamp } from './config.js';
-import { buildCourt, Flashes, glowTexture } from './court.js';
+import { Court, Flashes, glowTexture } from './court.js';
 import { Sfx } from './audio.js';
 import { Scoreboard } from './scoreboard.js';
 import { Paddle } from './paddles.js';
@@ -40,9 +40,9 @@ scene.add(sun);
 const court = new THREE.Group();
 scene.add(court);
 const glowTex = glowTexture();
-const setCourtPassthrough = buildCourt(court);
+const courtModel = new Court(court); // walls and lines; its depth follows the rally
 const flashes = new Flashes(court, glowTex);
-const scoreboard = new Scoreboard(court);
+const scoreboard = new Scoreboard(courtModel.front); // on the front wall, moving with it
 const sfx = new Sfx();
 const paddles = { left: new Paddle(court, 'left', COLORS.left), right: new Paddle(court, 'right', COLORS.right) };
 const paddleList = [paddles.left, paddles.right];
@@ -68,7 +68,7 @@ function placeDesktop() {
   court.position.set(0, 0, 0);
   court.rotation.set(0, 0, 0);
   camera.position.set(0, 1.6, 0);
-  camera.lookAt(0, 1.3, CFG.FRONT_Z);
+  camera.lookAt(0, 1.3, CFG.BACK_Z - CFG.DEPTH_START);
 }
 placeDesktop();
 
@@ -119,16 +119,16 @@ function setPassthrough(on) {
 function applyView() {
   const mr = passthrough && renderer.xr.isPresenting && xr.mode === 'immersive-ar';
   scene.background = mr ? null : BG;
-  setCourtPassthrough(mr);
+  courtModel.setPassthrough(mr);
   modeButton.setLabel(mr ? 'MODE: MR' : 'MODE: VR');
   modeButton.mesh.visible = renderer.xr.isPresenting && xr.mode === 'immersive-ar';
 }
 
 // ---------- wall buttons: exit (left of the board), VR / MR (right) ----------
 const buttonX = CFG.BOARD_W / 2 + CFG.BUTTON_W / 2 + 0.05;
-const exitButton = new WallButton(court, -buttonX, '#ff4d7a', () => closeGesture.close());
+const exitButton = new WallButton(courtModel.front, -buttonX, '#ff4d7a', () => closeGesture.close());
 exitButton.setLabel('EXIT');
-const modeButton = new WallButton(court, buttonX, '#00f6ff', () => setPassthrough(!passthrough));
+const modeButton = new WallButton(courtModel.front, buttonX, '#00f6ff', () => setPassthrough(!passthrough));
 const buttons = [exitButton, modeButton];
 
 // ---------- paddles from hands, controllers or the mouse ----------
@@ -293,6 +293,7 @@ renderer.setAnimationLoop((time, frame) => {
   game.desktop = !inXR;
   updateGestures(input.hands, dt, pointing);
   game.update(dt, paddleList);
+  courtModel.setDepth(game.depth);
   flashes.update(dt);
   scoreboard.draw(game, inXR);
   updatePage();

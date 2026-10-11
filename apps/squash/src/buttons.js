@@ -19,7 +19,7 @@ export class WallButton {
       new THREE.PlaneGeometry(w, h),
       new THREE.MeshBasicMaterial({ map: this.tex, transparent: true, toneMapped: false }),
     );
-    this.mesh.position.set(x, (CFG.OUT_H + CFG.COURT_H) / 2, CFG.FRONT_Z + 0.02);
+    this.mesh.position.set(x, (CFG.OUT_H + CFG.COURT_H) / 2, 0.02); // parent: the front wall
     parent.add(this.mesh);
     this.surface = { object: this.mesh, w, h, press: () => this.press() };
     this.onPress = onPress;

@@ -28,7 +28,7 @@ export class Scoreboard {
       new THREE.PlaneGeometry(CFG.BOARD_W, CFG.BOARD_W / 2),
       new THREE.MeshBasicMaterial({ map: this.tex, transparent: true, toneMapped: false }),
     );
-    this.mesh.position.set(0, (CFG.OUT_H + CFG.COURT_H) / 2, CFG.FRONT_Z + 0.02);
+    this.mesh.position.set(0, (CFG.OUT_H + CFG.COURT_H) / 2, 0.02); // parent: the front wall
     parent.add(this.mesh);
     this.key = '';
   }

@@ -225,7 +225,7 @@ Desktop preview: recording needs the headset, but takes play back and can be tri
 
 ## Squash
 
-Cube squash, solo: you stand in a small closed neon court (2 m wide, 2 m high, 3 m deep: the front wall 2 m ahead, the back wall 1 m behind you) with a cube in each hand (cyan left, magenta right) and rally a small white cube against the front wall.
+Cube squash, solo: you stand in a narrow closed neon court (1.5 m wide, 2 m high, 5 m deep: the front wall 4 m ahead, the back wall 1 m behind you) with a cube in each hand (cyan left, magenta right) and rally a small white cube against the front wall.
 
 | Gesture | Effect |
 | --- | --- |
@@ -237,7 +237,7 @@ Cube squash, solo: you stand in a small closed neon court (2 m wide, 2 m high, 3
 
 **Mixed reality:** on Quest 3 you can play in your own room: the walls and floor turn almost see-through (passthrough), so only the court's neon lines, the board and the ball are drawn over your room. Tick **Mixed reality** on the page before tapping **Enter**, or poke **MODE** on the front wall in XR; it's remembered. The 2 × 2 × 3 m court is about the size of a cleared play space, so make sure your guardian boundary covers it. The laser only shows while it's on a button, so it doesn't run through your cubes.
 
-Each shot that reaches the front wall is a point; the rally ends when the ball bounces twice on the floor or gets past you, and that costs one of three lives. The rally, lives and best score are on the board above the front wall; the best is kept in the browser. The ball speeds up as the rally grows, and front-wall rebounds are steered partly back toward you so a solo rally can keep going (`RETURN_ASSIST` in `apps/squash/src/config.js`, with the court size, gravity, damping, speeds and sizes; 0 is pure physics). Controllers rumble on every hit, harder for harder hits; the sounds are made on the fly (a tock for hits, a thud for the walls, a chime for points).
+Every 10 points in a rally the court gets 1 m shorter: the front wall slides toward you (with a low sweep and a message on the board), from 5 m down to 2 m deep at 30 points. Each new serve starts at 5 m again. Each shot that reaches the front wall is a point; the rally ends when the ball bounces twice on the floor or gets past you, and that costs one of three lives. The rally, lives and best score are on the board above the front wall; the best is kept in the browser. The ball speeds up as the rally grows, and front-wall rebounds are steered partly back toward you so a solo rally can keep going (`RETURN_ASSIST` in `apps/squash/src/config.js`, with the court size, gravity, damping, speeds and sizes; 0 is pure physics). Controllers rumble on every hit, harder for harder hits; the sounds are made on the fly (a tock for hits, a thud for the walls, a chime for points).
 
 With hands, the cube floats just in front of your palm; with controllers, just past the tip. The paddle's path between frames is checked in steps, so fast swings can't pass through the ball.
 
@@ -366,7 +366,7 @@ apps/mocap/
   src/main.js       the mannequin, countdowns, recording at 30 fps, playback, trim, undo, XR
 apps/squash/
   src/config.js     tunable constants: court, physics, speeds, sizes, rules
-  src/court.js      the court (walls, neon edges, grid, squash lines) and impact flashes
+  src/court.js      the court (walls, neon edges, grid, squash lines), its changing depth, impact flashes
   src/paddles.js    a cube paddle: pose, velocity from a short history, hit glow
   src/game.js       the ball, swept paddle hits, bounces, rules and scoring, trail
   src/audio.js      procedural sounds (Web Audio)
