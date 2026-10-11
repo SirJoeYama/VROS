@@ -2,10 +2,14 @@
 // space: the player starts at the origin facing -Z, the front wall ahead.
 export const CFG = {
   // Court
-  COURT_W: 2.0, // side wall to side wall
+  COURT_W: 1.5, // side wall to side wall
   COURT_H: 2.0, // floor to ceiling
-  FRONT_Z: -2.0, // front wall plane, 2 m ahead
-  BACK_Z: 1.0, // back wall plane, 1 m behind: 3 m deep in all
+  BACK_Z: 1.0, // back wall plane, 1 m behind you; the front wall is DEPTH ahead of it
+  DEPTH_START: 5.0, // the court's depth at the start of each rally (front wall 4 m ahead)
+  DEPTH_MIN: 2.0, // it never gets shorter than this
+  DEPTH_STEP: 1.0, // every POINTS_PER_STEP points the front wall comes this much closer
+  POINTS_PER_STEP: 10,
+  DEPTH_SPEED: 0.7, // how fast the front wall moves when it does (m/s)
   TIN_H: 0.15, SERVICE_H: 0.6, OUT_H: 1.5, OUT_BACK_H: 0.7, // squash lines, scaled to the court
   SHORT_LINE: 0.56, // the short line, as a fraction of the depth from the front wall
 
@@ -58,8 +62,8 @@ export const CFG = {
 
   // Front-wall panel: the scoreboard between the out line and the ceiling,
   // with a button each side (pressed with a controller's laser)
-  BOARD_W: 0.9,
-  BUTTON_W: 0.28, BUTTON_H: 0.14,
+  BOARD_W: 0.7,
+  BUTTON_W: 0.24, BUTTON_H: 0.12,
 
   // Mixed reality: how see-through the walls are over passthrough (0 = invisible)
   MR_WALL_OPACITY: 0.12,

@@ -18,7 +18,9 @@ const _m = new THREE.Matrix4(), _s = new THREE.Vector3(), _c = new THREE.Color()
 // States: serve (waiting for a pinch / trigger) → ready (the ball floats in
 // front of you) → play → miss (a short pause) → serve, or over after the
 // last life. A front-wall hit after one of your shots scores a point; two
-// floor bounces, or the ball getting past you, ends the rally.
+// floor bounces, or the ball getting past you, ends the rally. Every
+// POINTS_PER_STEP points the court gets DEPTH_STEP shorter (the front wall
+// slides toward you), down to DEPTH_MIN; each serve starts at DEPTH_START.
 export class Game {
   constructor(parent, { sfx, flashes, glowTex, haptic }) {
     this.sfx = sfx;
@@ -69,12 +71,19 @@ export class Game {
     this.missTimer = 0;
     try { this.best = parseInt(localStorage.getItem(BEST_KEY), 10) || 0; } catch { /* storage blocked */ }
 
+    this.depth = CFG.DEPTH_START; // the court's depth now (the front wall slides to targetDepth)
+    this.targetDepth = CFG.DEPTH_START;
+    this.wallSpeed = 0; // how fast the front wall is moving toward you
     this.head = new THREE.Vector3(0, 1.6, 0); // your eyes, court space
     this.desktop = true;
   }
 
   _saveBest() {
     try { localStorage.setItem(BEST_KEY, String(this.best)); } catch { /* ignore */ }
+  }
+
+  get frontZ() {
+    return CFG.BACK_Z - this.depth;
   }
 
   get minSpeed() {
@@ -99,7 +108,7 @@ export class Game {
     }
     base.x = clamp(base.x, -HW + 0.2, HW - 0.2);
     base.y = clamp(base.y, 0.3, H - 0.3);
-    base.z = clamp(base.z, CFG.FRONT_Z + 0.5, CFG.BACK_Z - 0.2);
+    base.z = clamp(base.z, this.frontZ + 0.5, CFG.BACK_Z - 0.2);
     this.ball.position.copy(base);
     this.vel.set(0, 0, 0);
     this.ang.set(0.6, 1.0, 0.3);
@@ -111,6 +120,7 @@ export class Game {
     this.ball.visible = true;
     this.trailCount = 0;
     this.rally = 0;
+    this.targetDepth = CFG.DEPTH_START; // back to the full court
     this.state = 'ready';
     this.message = 'HIT THE BALL!';
     this.sfx.serve();
@@ -119,6 +129,10 @@ export class Game {
   // One frame. paddles: the Paddle objects, already updated this frame.
   update(dt, paddles) {
     this.time += dt;
+    // slide the front wall toward the depth the rally has earned
+    const move = clamp(this.targetDepth - this.depth, -CFG.DEPTH_SPEED * dt, CFG.DEPTH_SPEED * dt);
+    this.depth += move;
+    this.wallSpeed = dt > 0 ? -move / dt : 0;
     const S = CFG.SUBSTEPS, h = dt / S;
     for (let k = 1; k <= S; k++) this._step(h, k / S, paddles);
     this._rules(dt);
@@ -139,7 +153,11 @@ export class Game {
       if (p.x > HW - r && v.x > 0) { p.x = HW - r; this._bounce(N_RIGHT, CFG.WALL_DAMP, 'side'); }
       if (p.y > H - r && v.y > 0) { p.y = H - r; this._bounce(N_CEIL, CFG.WALL_DAMP, 'ceiling'); }
       if (p.z > CFG.BACK_Z - r && v.z > 0) { p.z = CFG.BACK_Z - r; this._bounce(N_BACK, CFG.WALL_DAMP, 'back'); }
-      if (p.z < CFG.FRONT_Z + r && v.z < 0) { p.z = CFG.FRONT_Z + r; this._bounce(N_FRONT, CFG.FRONT_WALL_DAMP, 'front'); }
+      if (p.z < this.frontZ + r) {
+        p.z = this.frontZ + r;
+        if (v.z < 0) this._bounce(N_FRONT, CFG.FRONT_WALL_DAMP, 'front');
+        else v.z = Math.max(v.z, this.wallSpeed); // the moving wall pushes the ball along
+      }
       if (p.y < r && v.y < 0) { p.y = r; this._bounce(N_FLOOR, CFG.FLOOR_DAMP, 'floor'); }
       if (!this.active) return; // a bounce may have ended the rally
     }
@@ -261,6 +279,12 @@ export class Game {
         this.rally++;
         if (this.rally > this.best) this.best = this.rally;
         this.sfx.chime();
+        const depth = Math.max(CFG.DEPTH_MIN, CFG.DEPTH_START - Math.floor(this.rally / CFG.POINTS_PER_STEP) * CFG.DEPTH_STEP);
+        if (depth < this.targetDepth) {
+          this.targetDepth = depth;
+          this.message = `COURT SHRINKS TO ${depth} M`;
+          this.sfx.shrink();
+        }
       }
       this._returnAssist();
     } else if (kind === 'back') this._endRally('PAST YOU');

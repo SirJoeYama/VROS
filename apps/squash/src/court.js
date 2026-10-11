@@ -19,51 +19,79 @@ export function glowTexture() {
 
 // The closed court: dark walls seen from inside, neon edges, a floor grid
 // and the squash lines (tin, service and out lines, short line, half line).
-// Returns setPassthrough(on): in mixed reality the walls and floor turn
-// almost see-through, so your room shows behind the neon lines.
-export function buildCourt(parent) {
-  const W = CFG.COURT_W, H = CFG.COURT_H, HW = W / 2;
-  const D = CFG.BACK_Z - CFG.FRONT_Z, CZ = (CFG.BACK_Z + CFG.FRONT_Z) / 2;
+// Its depth can change while you play (setDepth): the back wall stays put
+// and the front wall moves. Built so that's cheap every frame:
+// - `stretch`: the walls and everything running along the court, built one
+//   metre deep from the back wall and scaled to the depth;
+// - `front`: the front wall's lines, plus whatever rides on the wall (the
+//   scoreboard and buttons), moved to the front wall;
+// - the grid's cross lines stay 0.5 m apart; the ones beyond the front wall
+//   aren't drawn.
+export class Court {
+  constructor(parent) {
+    const W = CFG.COURT_W, H = CFG.COURT_H, HW = W / 2, B = CFG.BACK_Z;
+    const lines = (group, pts, color) => {
+      const g = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+      const l = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color }));
+      group.add(l);
+      return l;
+    };
 
-  const geo = new THREE.BoxGeometry(W, H, D);
-  const wall = new THREE.MeshLambertMaterial({ color: COLORS.wall, side: THREE.BackSide });
-  const floor = new THREE.MeshLambertMaterial({ color: COLORS.floor, side: THREE.BackSide });
-  const front = new THREE.MeshLambertMaterial({ color: COLORS.front, side: THREE.BackSide });
-  // face order: +x, -x, +y, -y, +z (back), -z (front)
-  const box = new THREE.Mesh(geo, [wall, wall, wall, floor, wall, front]);
-  box.position.set(0, H / 2, CZ);
-  parent.add(box);
+    this.stretch = new THREE.Group();
+    this.stretch.position.z = B;
+    parent.add(this.stretch);
+    const geo = new THREE.BoxGeometry(W, H, 1).translate(0, H / 2, -0.5);
+    this.materials = {
+      wall: new THREE.MeshLambertMaterial({ color: COLORS.wall, side: THREE.BackSide }),
+      floor: new THREE.MeshLambertMaterial({ color: COLORS.floor, side: THREE.BackSide }),
+      front: new THREE.MeshLambertMaterial({ color: COLORS.front, side: THREE.BackSide }),
+    };
+    const { wall, floor, front } = this.materials;
+    // face order: +x, -x, +y, -y, +z (back), -z (front)
+    this.stretch.add(new THREE.Mesh(geo, [wall, wall, wall, floor, wall, front]));
+    this.stretch.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: COLORS.edge })));
+    const y = 0.002, fy = 0.004, sx = HW - 0.005, sz = -(1 - CFG.SHORT_LINE); // local z: 0 = back wall, -1 = front wall
+    const along = [];
+    for (let x = -HW; x <= HW + 1e-6; x += 0.5) along.push(x, y, -1, x, y, 0);
+    lines(this.stretch, along, COLORS.grid);
+    lines(this.stretch, [-sx, CFG.OUT_H, -1, -sx, CFG.OUT_BACK_H, 0, sx, CFG.OUT_H, -1, sx, CFG.OUT_BACK_H, 0], COLORS.line);
+    lines(this.stretch, [-HW, fy, sz, HW, fy, sz, 0, fy, sz, 0, fy, 0], COLORS.floorLine);
 
-  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: COLORS.edge }));
-  edges.position.copy(box.position);
-  parent.add(edges);
+    // grid lines across the floor, from the back wall forward
+    const across = [];
+    for (let d = 0; d <= CFG.DEPTH_START + 1e-6; d += 0.5) across.push(-HW, y, B - d, HW, y, B - d);
+    this.across = lines(parent, across, COLORS.grid);
 
-  const lines = (pts, color) => {
-    const g = new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    parent.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color })));
-  };
+    this.front = new THREE.Group();
+    parent.add(this.front);
+    lines(this.front, [-HW, CFG.TIN_H, 0.005, HW, CFG.TIN_H, 0.005], COLORS.tin);
+    lines(this.front, [-HW, CFG.SERVICE_H, 0.005, HW, CFG.SERVICE_H, 0.005, -HW, CFG.OUT_H, 0.005, HW, CFG.OUT_H, 0.005], COLORS.line);
 
-  const grid = [], y = 0.002;
-  for (let x = -HW; x <= HW + 1e-6; x += 0.5) grid.push(x, y, CFG.FRONT_Z, x, y, CFG.BACK_Z);
-  for (let z = CFG.FRONT_Z; z <= CFG.BACK_Z + 1e-6; z += 0.5) grid.push(-HW, y, z, HW, y, z);
-  lines(grid, COLORS.grid);
+    this.setDepth(CFG.DEPTH_START);
+  }
 
-  const fz = CFG.FRONT_Z + 0.005;
-  lines([-HW, CFG.TIN_H, fz, HW, CFG.TIN_H, fz], COLORS.tin);
-  lines([-HW, CFG.SERVICE_H, fz, HW, CFG.SERVICE_H, fz, -HW, CFG.OUT_H, fz, HW, CFG.OUT_H, fz], COLORS.line);
-  const sx = HW - 0.005;
-  lines([-sx, CFG.OUT_H, CFG.FRONT_Z, -sx, CFG.OUT_BACK_H, CFG.BACK_Z, sx, CFG.OUT_H, CFG.FRONT_Z, sx, CFG.OUT_BACK_H, CFG.BACK_Z], COLORS.line);
-  const shortZ = CFG.FRONT_Z + D * CFG.SHORT_LINE, fy = 0.004;
-  lines([-HW, fy, shortZ, HW, fy, shortZ, 0, fy, shortZ, 0, fy, CFG.BACK_Z], COLORS.floorLine);
+  get frontZ() {
+    return CFG.BACK_Z - this.depth;
+  }
 
-  return function setPassthrough(on) {
-    for (const m of [wall, floor, front]) {
+  setDepth(depth) {
+    if (depth === this.depth) return;
+    this.depth = depth;
+    this.stretch.scale.z = depth;
+    this.front.position.z = this.frontZ;
+    this.across.geometry.setDrawRange(0, 2 * (Math.floor(depth / 0.5 + 1e-6) + 1));
+  }
+
+  // Mixed reality: the walls and floor turn almost see-through, so your room
+  // shows behind the neon lines.
+  setPassthrough(on) {
+    for (const m of Object.values(this.materials)) {
       m.transparent = on;
       m.opacity = on ? CFG.MR_WALL_OPACITY : 1;
       m.depthWrite = !on;
       m.needsUpdate = true;
     }
-  };
+  }
 }
 
 const Z_AXIS = new THREE.Vector3(0, 0, 1);
