@@ -8,7 +8,7 @@ It runs as a WebXR page in the Quest Browser, with passthrough when it's availab
 
 Opening the site shows a start screen with an icon for each app. Tap one to launch it; each app has a **← Home** link to come back.
 
-**In XR:** tap **Enter** on the start screen and the app icons float in an arc in front of you, with the time above. Poke an icon with your index finger to open it (with controllers, pull the trigger on it). A right-hand thumbs down on the home screen leaves XR.
+**In XR:** tap **Enter** on the start screen and the app icons float in front of you in rows of four, in the same order as the web page, with the time above. Poke an icon with your index finger to open it (with controllers, pull the trigger on it). A right-hand thumbs down on the home screen leaves XR.
 
 Moving between the home screen and apps keeps you in the headset when the browser supports WebXR navigation (Quest Browser does): the next page re-enters XR on its own. Otherwise you land on the page and tap **Enter** again.
 
@@ -288,7 +288,7 @@ Then open `http://localhost:3000` in the Quest Browser.
 
 ```
 index.html, home.js, home.css   start screen (app icons)
-homeXR.js           the start screen in XR: icon shelf you poke
+homeXR.js           the start screen in XR: a grid of icons you poke, four per row
 shared/             used by the home screen and every app
   xr.js             Enter button, passthrough/VR choice, re-entering XR after navigation
   input.js          hands / controllers / mouse → unified gesture state (trigger pressure, grip, sticks, buttons, the pointing ray)
