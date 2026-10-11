@@ -7,8 +7,10 @@ import { HelpGesture } from './shared/helpGesture.js';
 import { setupEnterXR } from './shared/xr.js';
 
 const TILE = 0.11; // icon size (m)
-const GAP = 0.035;
-const RADIUS = 0.55; // distance of the icon arc from your head
+const GAP = 0.05;
+const COLS = 4; // icons per row, like the web page's grid
+const ROW = TILE * 1.8; // row pitch: icon plus its label
+const RADIUS = 0.55; // distance of the icon grid from your head
 const HOVER_DEPTH = 0.06; // fingertip this close in front of an icon highlights it
 const PRESS_DEPTH = 0.012; // ...and this close presses it
 
@@ -56,7 +58,9 @@ function iconTexture(src) {
   return texture;
 }
 
-// The icons, title and clock, laid out on an arc in front of the viewer.
+// The icons, title and clock in front of the viewer: a grid of four icons per
+// row in the home page's order (a short last row starts on the left, like the
+// web page), each row curved around you and tilted to face your eyes.
 // Poke an icon with your index finger (or pinch on it with a controller) to
 // call onLaunch(app).
 export class HomeShelf {
@@ -98,17 +102,22 @@ export class HomeShelf {
 
   // `head`: eye position; `fwd`: horizontal unit vector the viewer faces.
   layout(head, fwd) {
-    const y = head.y - 0.12;
+    const rows = Math.ceil(this.tiles.length / COLS);
+    const top = head.y - 0.12 + ((rows - 1) * ROW) / 2; // the grid is centred a little below your eyes
     const step = (TILE + GAP) / RADIUS;
+    const up = new THREE.Vector3(0, 1, 0);
     this.tiles.forEach((tile, i) => {
-      const a = (i - (this.tiles.length - 1) / 2) * step;
-      const dir = fwd.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -a);
+      const col = i % COLS, row = Math.floor(i / COLS);
+      const a = (col - (COLS - 1) / 2) * step;
+      const dir = fwd.clone().applyAxisAngle(up, -a);
+      const y = top - row * ROW;
       tile.group.position.set(head.x + dir.x * RADIUS, y, head.z + dir.z * RADIUS);
-      tile.group.lookAt(head.x, y, head.z);
+      tile.group.lookAt(head);
     });
     const t = this.title.mesh;
-    t.position.set(head.x + fwd.x * (RADIUS + 0.02), y + 0.15, head.z + fwd.z * (RADIUS + 0.02));
-    t.lookAt(head.x, y + 0.15, head.z);
+    const ty = top + 0.15;
+    t.position.set(head.x + fwd.x * (RADIUS + 0.02), ty, head.z + fwd.z * (RADIUS + 0.02));
+    t.lookAt(head.x, ty, head.z);
     this.group.updateMatrixWorld(true);
   }
 
