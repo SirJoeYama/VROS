@@ -244,7 +244,7 @@ export class Game {
     if (kind === 'floor') {
       if (impact > 0.3) {
         this.sfx.floor(impact, p.x);
-        this.flashes.spawn(_v1.set(p.x, 0, p.z), n, COLORS.right, 0.5);
+        this.flashes.spawn(_v1.set(p.x, 0, p.z), n, COLORS.right, 0.3);
       }
       if (this.state === 'play' && impact > 0.05 && ++this.floorBounces >= 2) this._endRally('DOUBLE BOUNCE');
       return;
@@ -252,7 +252,7 @@ export class Game {
     const front = kind === 'front';
     if (impact > 0.3) {
       this.sfx.thud(impact, p.x, front);
-      this.flashes.spawn(p, n, front ? 0xffffff : COLORS.left, front ? 0.9 : 0.6);
+      this.flashes.spawn(p, n, front ? 0xffffff : COLORS.left, front ? 0.5 : 0.35);
     }
     if (this.state !== 'play') return;
     if (front) {
@@ -271,12 +271,12 @@ export class Game {
   _returnAssist() {
     if (CFG.RETURN_ASSIST <= 0) return;
     const head = this.head, d = this.desktop;
-    const tx = clamp(head.x + (Math.random() - 0.5) * (d ? 0.5 : 0.9), -HW + 0.4, HW - 0.4);
+    const tx = clamp(head.x + (Math.random() - 0.5) * CFG.RETURN_SPREAD * (d ? 0.6 : 1), -HW + 0.3, HW - 0.3);
     const ty = d ? head.y - 0.25 : head.y - CFG.RETURN_DROP;
     const tz = d ? head.z - CFG.DESKTOP_PLANE : head.z - 0.45;
     const p = this.ball.position, v = this.vel;
     const dx = tx - p.x, dy = ty - p.y, dz = tz - p.z;
-    const across = Math.max(Math.hypot(v.x, v.z), this.minSpeed * 0.75);
+    const across = clamp(Math.hypot(v.x, v.z), this.minSpeed * 0.75, CFG.RETURN_SPEED_MAX);
     const t = clamp(Math.hypot(dx, dz) / across, 0.5, 2.2);
     v.lerp(_v1.set(dx / t, dy / t + 0.5 * CFG.GRAVITY * t, dz / t), CFG.RETURN_ASSIST);
     const s = v.length();
@@ -288,7 +288,7 @@ export class Game {
     this.lives--;
     if (this.rally > this.best) this.best = this.rally;
     this._saveBest();
-    this.flashes.spawn(this.ball.position, _v1.subVectors(this.head, this.ball.position).normalize(), COLORS.tin, 0.7);
+    this.flashes.spawn(this.ball.position, _v1.subVectors(this.head, this.ball.position).normalize(), COLORS.tin, 0.4);
     this.active = false;
     this.ball.visible = false;
     this.state = 'miss';

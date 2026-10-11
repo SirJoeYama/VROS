@@ -19,6 +19,8 @@ export function glowTexture() {
 
 // The closed court: dark walls seen from inside, neon edges, a floor grid
 // and the squash lines (tin, service and out lines, short line, half line).
+// Returns setPassthrough(on): in mixed reality the walls and floor turn
+// almost see-through, so your room shows behind the neon lines.
 export function buildCourt(parent) {
   const W = CFG.COURT_W, H = CFG.COURT_H, HW = W / 2;
   const D = CFG.BACK_Z - CFG.FRONT_Z, CZ = (CFG.BACK_Z + CFG.FRONT_Z) / 2;
@@ -50,9 +52,18 @@ export function buildCourt(parent) {
   lines([-HW, CFG.TIN_H, fz, HW, CFG.TIN_H, fz], COLORS.tin);
   lines([-HW, CFG.SERVICE_H, fz, HW, CFG.SERVICE_H, fz, -HW, CFG.OUT_H, fz, HW, CFG.OUT_H, fz], COLORS.line);
   const sx = HW - 0.005;
-  lines([-sx, CFG.OUT_H, CFG.FRONT_Z, -sx, 2.13, CFG.BACK_Z, sx, CFG.OUT_H, CFG.FRONT_Z, sx, 2.13, CFG.BACK_Z], COLORS.line);
-  const shortZ = CFG.FRONT_Z + 5.44, fy = 0.004;
+  lines([-sx, CFG.OUT_H, CFG.FRONT_Z, -sx, CFG.OUT_BACK_H, CFG.BACK_Z, sx, CFG.OUT_H, CFG.FRONT_Z, sx, CFG.OUT_BACK_H, CFG.BACK_Z], COLORS.line);
+  const shortZ = CFG.FRONT_Z + D * CFG.SHORT_LINE, fy = 0.004;
   lines([-HW, fy, shortZ, HW, fy, shortZ, 0, fy, shortZ, 0, fy, CFG.BACK_Z], COLORS.floorLine);
+
+  return function setPassthrough(on) {
+    for (const m of [wall, floor, front]) {
+      m.transparent = on;
+      m.opacity = on ? CFG.MR_WALL_OPACITY : 1;
+      m.depthWrite = !on;
+      m.needsUpdate = true;
+    }
+  };
 }
 
 const Z_AXIS = new THREE.Vector3(0, 0, 1);

@@ -225,19 +225,23 @@ Desktop preview: recording needs the headset, but takes play back and can be tri
 
 ## Squash
 
-Cube squash, solo: you stand in a closed neon court with a cube in each hand (cyan left, magenta right) and rally a small white cube against the front wall, about 6 m ahead.
+Cube squash, solo: you stand in a small closed neon court (2 m wide, 2 m high, 3 m deep: the front wall 2 m ahead, the back wall 1 m behind you) with a cube in each hand (cyan left, magenta right) and rally a small white cube against the front wall.
 
 | Gesture | Effect |
 | --- | --- |
 | **Pinch** (trigger on controllers) | Serve: the ball appears floating in front of you. After game over, restarts. |
 | **Swing a cube through the ball** | Hit it. How fast you swing is how fast it goes; hitting off-centre angles and spins it. |
 | **Two fists, held ~1 s** (right stick click) | Puts the court back around you, facing where you look. Only between rallies: a fist is how you hold a cube. |
+| **Point at EXIT, pull the trigger** | Leaves the game, back to the home screen. The button is on the front wall, left of the scoreboard (the right-hand thumbs down and holding Y work too). |
+| **Point at MODE, pull the trigger** | Switches between VR (the dark court) and mixed reality. |
+
+**Mixed reality:** on Quest 3 you can play in your own room: the walls and floor turn almost see-through (passthrough), so only the court's neon lines, the board and the ball are drawn over your room. Tick **Mixed reality** on the page before tapping **Enter**, or poke **MODE** on the front wall in XR; it's remembered. The 2 × 2 × 3 m court is about the size of a cleared play space, so make sure your guardian boundary covers it. The laser only shows while it's on a button, so it doesn't run through your cubes.
 
 Each shot that reaches the front wall is a point; the rally ends when the ball bounces twice on the floor or gets past you, and that costs one of three lives. The rally, lives and best score are on the board above the front wall; the best is kept in the browser. The ball speeds up as the rally grows, and front-wall rebounds are steered partly back toward you so a solo rally can keep going (`RETURN_ASSIST` in `apps/squash/src/config.js`, with the court size, gravity, damping, speeds and sizes; 0 is pure physics). Controllers rumble on every hit, harder for harder hits; the sounds are made on the fly (a tock for hits, a thud for the walls, a chime for points).
 
 With hands, the cube floats just in front of your palm; with controllers, just past the tip. The paddle's path between frames is checked in steps, so fast swings can't pass through the ball.
 
-Desktop preview: the mouse moves the magenta cube on a plane in front of you and a click serves; a mouse can't swing, so its hits always go forward.
+Desktop preview: the mouse moves the magenta cube on a plane in front of you and a click serves (a click on **EXIT** leaves); a mouse can't swing, so its hits always go forward.
 
 ## Quest controllers
 
@@ -365,8 +369,9 @@ apps/squash/
   src/paddles.js    a cube paddle: pose, velocity from a short history, hit glow
   src/game.js       the ball, swept paddle hits, bounces, rules and scoring, trail
   src/audio.js      procedural sounds (Web Audio)
-  src/scoreboard.js the board above the front wall
-  src/main.js       placing the court around you, paddles from hands / controllers / mouse, XR
+  src/scoreboard.js the board on the front wall
+  src/buttons.js    the EXIT and MODE buttons beside it (laser pointer or click)
+  src/main.js       placing the court around you, paddles from hands / controllers / mouse, VR / mixed reality, XR
 apps/plume/
   src/brush.js      stroke geometry (ribbon, tube, glow), merging strokes into meshes
   src/doc.js        layers, frames, strokes, undo / redo, saving (IndexedDB)
