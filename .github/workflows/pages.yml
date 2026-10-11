@@ -23,6 +23,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      # New URLs for the code and styles on every deploy, so browsers (the
+      # Quest Browser especially) fetch the new version instead of a cached one.
+      - name: Version code and styles
+        run: python3 .github/cachebust.py .
+        env:
+          VERSION: ${{ github.sha }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .

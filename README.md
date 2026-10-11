@@ -270,6 +270,7 @@ WebXR needs a secure origin (HTTPS or `localhost`).
 **Option A: GitHub Pages (easiest)**
 1. In the repo on GitHub, go to **Settings → Pages → Source** and choose **GitHub Actions**.
 2. Push to `main`. The workflow in `.github/workflows/pages.yml` publishes the site.
+   Each deploy stamps the code and style files with the commit's version (`.github/cachebust.py`), so the Quest Browser fetches the new code instead of a cached copy. A page itself can still be reused from the cache for up to 10 minutes after a deploy (GitHub Pages' limit).
 3. On the Quest, open the Pages URL in the Browser, pick an app and tap **Enter (passthrough)**. Put the controllers down and your hands take over.
 4. Optional: install it from the Browser menu as an app so it shows up in your library.
 

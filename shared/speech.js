@@ -133,7 +133,8 @@ class WhisperEngine {
     this.busy = false;
     this.nextId = 0;
 
-    this.worker = new Worker(new URL('./whisper-worker.js', import.meta.url), { type: 'module' });
+    // keep this module's ?v= version (see .github/cachebust.py), so a deploy refreshes the worker too
+    this.worker = new Worker(new URL('./whisper-worker.js' + new URL(import.meta.url).search, import.meta.url), { type: 'module' });
     this.worker.onmessage = ({ data }) => this._onWorker(data);
     this.worker.postMessage({ type: 'load', model: owner.model, webgpu: !!navigator.gpu });
     owner.onStatus('loading speech model…');
