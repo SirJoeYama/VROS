@@ -2,14 +2,15 @@
 // space: the player starts at the origin facing -Z, the front wall ahead.
 export const CFG = {
   // Court
-  COURT_W: 6.4, // side wall to side wall
-  COURT_H: 6.0, // floor to ceiling
-  FRONT_Z: -6.0, // front wall plane (about 6 m ahead)
-  BACK_Z: 2.5, // back wall plane (behind the player)
-  TIN_H: 0.48, SERVICE_H: 1.78, OUT_H: 4.57,
+  COURT_W: 2.0, // side wall to side wall
+  COURT_H: 2.0, // floor to ceiling
+  FRONT_Z: -2.0, // front wall plane, 2 m ahead
+  BACK_Z: 1.0, // back wall plane, 1 m behind: 3 m deep in all
+  TIN_H: 0.15, SERVICE_H: 0.6, OUT_H: 1.5, OUT_BACK_H: 0.7, // squash lines, scaled to the court
+  SHORT_LINE: 0.56, // the short line, as a fraction of the depth from the front wall
 
   // Physics
-  GRAVITY: 3.2, // light gravity, m/s²
+  GRAVITY: 2.0, // light gravity, m/s²
   WALL_DAMP: 0.88, // normal restitution: side walls, ceiling, back wall
   FRONT_WALL_DAMP: 0.95,
   FLOOR_DAMP: 0.7,
@@ -20,11 +21,13 @@ export const CFG = {
 
   // Ball
   BALL_SIZE: 0.1,
-  BASE_SPEED: 6.0, // minimum forward shot speed at rally 0
-  SPEED_RAMP: 0.25, // the minimum grows this much per rally point
-  MAX_SPEED: 16.0, // hard clamp
+  BASE_SPEED: 3.5, // minimum forward shot speed at rally 0
+  SPEED_RAMP: 0.1, // the minimum grows this much per rally point
+  MAX_SPEED: 8.0, // hard clamp
+  RETURN_SPEED_MAX: 5.0, // assisted rebounds come back no faster than this (across the floor)
   RETURN_ASSIST: 0.6, // 0..1: how much front-wall rebounds are steered back to the player (0 = pure physics)
   RETURN_DROP: 0.45, // rebounds aim this far below your eyes
+  RETURN_SPREAD: 0.5, // and up to this far to either side
 
   // Paddles
   PADDLE_SIZE: 0.15,
@@ -39,19 +42,27 @@ export const CFG = {
 
   // Rules
   LIVES: 3,
-  BEHIND_MARGIN: 0.7, // the ball this far behind your head is a miss
+  BEHIND_MARGIN: 0.5, // the ball this far behind your head is a miss
   MISS_PAUSE: 1.4,
   STUCK_TIME: 9.0, // the rally ends after this long without a touch
   SERVE_DIST: 0.55,
 
   // FX
-  TRAIL_SPEED: 7.0,
+  TRAIL_SPEED: 4.5,
   TRAIL_LEN: 12,
 
   // Desktop preview
   DESKTOP_PLANE: 0.7, // the mouse paddle moves on a plane this far ahead
-  DESKTOP_PUSH: 5.0, // a mouse can't swing forward: hits get this forward speed
-  DESKTOP_LOFT: 1.5, // and this much upward, so they reach the wall
+  DESKTOP_PUSH: 3.0, // a mouse can't swing forward: hits get this forward speed
+  DESKTOP_LOFT: 0.8, // and this much upward, so they reach the wall
+
+  // Front-wall panel: the scoreboard between the out line and the ceiling,
+  // with a button each side (pressed with a controller's laser)
+  BOARD_W: 0.9,
+  BUTTON_W: 0.28, BUTTON_H: 0.14,
+
+  // Mixed reality: how see-through the walls are over passthrough (0 = invisible)
+  MR_WALL_OPACITY: 0.12,
 };
 
 export const COLORS = {

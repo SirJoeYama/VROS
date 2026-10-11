@@ -18,6 +18,7 @@
     <h1>SQUASH</h1>
     <p class="sub">cube squash: a cube in each hand, rally against the wall</p>
     <button id="enter" disabled>Checking WebXR…</button>
+    <label id="mr-row" class="check"><input id="mr" type="checkbox" /> Mixed reality: see your room around the court (passthrough)</label>
     <p id="status"></p>
     <p id="score"></p>
     <dl class="legend" data-common="reset undo">
@@ -25,8 +26,10 @@
       <dt data-icon="🎯">Front wall</dt><dd>+1 each time your shot reaches it</dd>
       <dt data-icon="🤏">Pinch</dt><dd>serve · restart after game over</dd>
       <dt data-icon="🔫" data-when="pads">Trigger</dt><dd>serve · restart after game over</dd>
+      <dt data-icon="🚪" data-when="pads">Point at EXIT + trigger</dt><dd>leave the game (button left of the board)</dd>
+      <dt data-icon="🌗" data-when="pads">Point at MODE + trigger</dt><dd>switch between VR and mixed reality</dd>
     </dl>
-    <p class="desk">Desktop: move the mouse to steer the magenta cube · click to serve · two bounces or a ball past you costs a life</p>
+    <p class="desk">Desktop: move the mouse to steer the magenta cube · click to serve · click EXIT to leave · two bounces or a ball past you costs a life</p>
   </div>
   <script type="module" src="src/main.js"></script>
 </body>

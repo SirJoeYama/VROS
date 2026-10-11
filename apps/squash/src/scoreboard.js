@@ -13,7 +13,7 @@ function roundRect(c, x, y, w, h, r) {
   c.closePath();
 }
 
-// The floating panel above the front wall's playing area: rally, lives,
+// The panel on the front wall, between the out line and the ceiling: rally, lives,
 // best and what to do next. Redrawn only when something changes.
 export class Scoreboard {
   constructor(parent) {
@@ -25,10 +25,10 @@ export class Scoreboard {
     this.tex.colorSpace = THREE.SRGBColorSpace;
     this.tex.anisotropy = 4;
     this.mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.6, 1.3),
+      new THREE.PlaneGeometry(CFG.BOARD_W, CFG.BOARD_W / 2),
       new THREE.MeshBasicMaterial({ map: this.tex, transparent: true, toneMapped: false }),
     );
-    this.mesh.position.set(0, CFG.OUT_H + 0.75, CFG.FRONT_Z + 0.05);
+    this.mesh.position.set(0, (CFG.OUT_H + CFG.COURT_H) / 2, CFG.FRONT_Z + 0.02);
     parent.add(this.mesh);
     this.key = '';
   }
