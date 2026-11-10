@@ -551,6 +551,7 @@ async function press(id) {
       } else storeClips(S.rigDef, savedClips(S.rigDef).filter((x) => x.name !== c.name));
       S.custom = S.custom.filter((x) => x !== c);
       S.chosen.delete(c.name);
+      if (S.lastClip?.clip === c) S.lastClip = null; // or it would play again, and CLIP POSE would still offer it
       const next = S.lastClip?.clip || S.clips?.find((x) => /idle/i.test(x.name)) || S.clips?.[0];
       if (next) S.rigged.play(next);
       say(`Removed “${c.name}”.`);
@@ -845,7 +846,7 @@ function updateView(hands) {
 // step through the frames like a jog dial (pose).
 // Both fists held for a second: bring everything back in front of you.
 function updateFists(hands, dt) {
-  const fists = hands.filter((h) => h.kind === 'hand' && h.fist);
+  const fists = hands.filter((h) => h.kind !== 'mouse' && h.fist);
   twist.prune(hands);
   for (const h of hands) if (!h.fist) twist.release(h);
   fistsHeld = fists.length === 2 ? fistsHeld + dt : 0;
@@ -999,7 +1000,7 @@ renderer.setAnimationLoop((time, frame) => {
   const palmHand = palmDock.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
   const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand), dt, viewer);
   const pointing = pointer.update(input.hands, [{ object: panel.mesh, w: PANEL_W, h: PANEL_H, press: (l) => press(panel.hit(l)) }], you());
-  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id) && !pointing.has(h.id) && !h.aim);
+  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id) && !pointing.has(h.id) && (!h.aim || h.fist));
   stickNav.update(input.hands, dt, viewer);
   updateHands(hands, dt, now);
   wheelZoom();

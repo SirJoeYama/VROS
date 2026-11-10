@@ -225,7 +225,7 @@ function updateGestures(hands, dt) {
     if (!h.pinch) drags.delete(h.id);
 
     // Fist + twist scrolls: clockwise moves down the page.
-    if (h.kind === 'hand' && h.fist) {
+    if (h.kind !== 'mouse' && h.fist) {
       const d = twist.roll(h);
       if (Math.abs(d) > 0.004) page.scrollBy(d * SCROLL_PER_RADIAN);
     } else twist.release(h);
