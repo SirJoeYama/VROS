@@ -365,7 +365,7 @@ function updatePointers(hands, dt) {
 let navGrab = null, fistsHeld = 0;
 function updateView(hands, dt) {
   // Two fists held for a second: back in front of the stage, at life size.
-  const fists = hands.filter((h) => h.kind === 'hand' && h.fist).length;
+  const fists = hands.filter((h) => h.kind !== 'mouse' && h.fist).length;
   fistsHeld = fists === 2 ? fistsHeld + dt : 0;
   if (fistsHeld > 1) {
     fistsHeld = -1e9; // once per hold
@@ -445,7 +445,7 @@ renderer.setAnimationLoop((time, frame) => {
   const palmHand = palmDock.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
   const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand), dt, viewer);
   const pointing = pointer.update(input.hands, [{ object: panel.mesh, w: PANEL_W, h: PANEL_H, press: (l) => { const r = panel.hit(l); if (r) press(r); } }], you());
-  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id) && !pointing.has(h.id) && !h.aim);
+  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id) && !pointing.has(h.id) && (!h.aim || h.fist));
   updateView(hands, dt);
   wheelZoom();
   if (!renderer.xr.isPresenting) placeDesk();

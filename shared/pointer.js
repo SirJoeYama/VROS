@@ -5,6 +5,15 @@ const _o = new THREE.Vector3(), _d = new THREE.Vector3(), _p = new THREE.Vector3
 const _plane = new THREE.Plane(), _ray = new THREE.Ray(), _local = new THREE.Vector3();
 const raycaster = new THREE.Raycaster();
 
+// The same panel (or the same meshes), even if the app made a new surface
+// object for it this frame.
+function sameSurface(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.object || b.object) return a.object === b.object;
+  return !!a.meshes && !!b.meshes && a.meshes.length === b.meshes.length && a.meshes.every((m, i) => m === b.meshes[i]);
+}
+
 // The laser pointer for Quest controllers: a beam from each controller to
 // whatever it points at, so panels, remotes, buttons and icons work from a
 // distance with the trigger (hands keep poking them with a fingertip).
@@ -53,8 +62,9 @@ export class Pointer {
         this.holding.set(h.id, h.aim.surface);
         h.aim.surface.press?.(this._arg(h.aim));
       } else if (h.pinch && this.holding.has(h.id)) {
-        const s = this.holding.get(h.id);
-        if (h.aim?.surface === s) s.drag?.(this._arg(h.aim));
+        // Apps usually build their surface list afresh each frame, so "still
+        // on the surface the trigger pressed" is judged by what it's made of.
+        if (h.aim && sameSurface(h.aim.surface, this.holding.get(h.id))) h.aim.surface.drag?.(this._arg(h.aim));
       }
       if (!h.pinch) this.holding.delete(h.id);
       if (this.holding.has(h.id)) used.add(h.id);

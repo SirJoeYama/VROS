@@ -368,7 +368,7 @@ function updateView(pinching, hands, dt) {
     grab.update(pinching[0].realPinch, pinching[1].realPinch);
     for (const h of pinching) if (pinches.has(h.id)) pinches.get(h.id).cancelled = true;
   } else grab = null;
-  const fists = hands.filter((h) => h.kind === 'hand' && h.fist).length;
+  const fists = hands.filter((h) => h.kind !== 'mouse' && h.fist).length;
   fistsHeld = fists === 2 ? fistsHeld + dt : 0;
   if (fistsHeld > 1) {
     fistsHeld = -1e9; // once per hold
@@ -506,7 +506,7 @@ renderer.setAnimationLoop((time, frame) => {
     const id = pet.hit(toPet(aim.point), 0.01);
     if (id) { pet.press(id); ACTIONS[id](); }
   } }], you());
-  updateGestures(input.hands.filter((h) => h !== helpHand && !pointing.has(h.id) && !h.aim), dt);
+  updateGestures(input.hands.filter((h) => h !== helpHand && !pointing.has(h.id) && (!h.aim || h.fist)), dt);
   updatePhase();
   if (phase === 'listening' && speechStatus && !heard && !bubble.answer) bubble.set({ status: speechStatus === 'listening' ? 'listening…' : speechStatus });
   pet.update(dt, face());

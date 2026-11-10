@@ -238,7 +238,7 @@ function updateView(pinching, hands, dt) {
     grab.update(pinching[0].realPinch, pinching[1].realPinch);
     for (const h of pinching) if (pinches.has(h.id)) pinches.get(h.id).cancelled = true;
   } else grab = null;
-  const fists = hands.filter((h) => h.kind === 'hand' && h.fist).length;
+  const fists = hands.filter((h) => h.kind !== 'mouse' && h.fist).length;
   fistsHeld = fists === 2 ? fistsHeld + dt : 0;
   if (fistsHeld > 1) {
     fistsHeld = -1e9; // once per hold
@@ -273,7 +273,7 @@ function updateGestures(hands, dt) {
 
     // Fist + twist: a jog dial. Clockwise goes forward, counter-clockwise back.
     // (One fist only: two fists are the recenter gesture.)
-    if (h.kind === 'hand' && h.fist && fists === 1) {
+    if (h.kind !== 'mouse' && h.fist && fists === 1) {
       twisting = true;
       const d = twist.roll(h);
       if (Math.abs(d) > 0.003) {
@@ -405,7 +405,7 @@ renderer.setAnimationLoop((time, frame) => {
   closeGesture.update(input.hands, dt, viewer);
   undoGesture.update(input.hands, dt, viewer);
   const pointing = pointer.update(input.hands, [{ object: remote.mesh, w: REMOTE_W, h: REMOTE_H, press: (l) => pressRemote(l) }], you());
-  updateGestures(input.hands.filter((h) => h !== helpHand && !pointing.has(h.id) && !h.aim), dt);
+  updateGestures(input.hands.filter((h) => h !== helpHand && !pointing.has(h.id) && (!h.aim || h.fist)), dt);
   updateScreen();
   remote.draw();
   handsView.update(input.hands, you());

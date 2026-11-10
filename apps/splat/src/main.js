@@ -375,7 +375,7 @@ function updateHands(hands, dt) {
 
   // One fist + twist: spin the splat like a turntable. Two fists held a
   // second: reset the view.
-  const fists = hands.filter((h) => h.kind === 'hand' && h.fist);
+  const fists = hands.filter((h) => h.kind !== 'mouse' && h.fist);
   twist.prune(hands);
   for (const h of hands) if (!h.fist) twist.release(h);
   fistsHeld = fists.length === 2 ? fistsHeld + dt : 0;
@@ -522,7 +522,7 @@ renderer.setAnimationLoop((time, frame) => {
   const palmHand = palmDock.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h)), dt, viewer);
   const carrying = panelGrab.update(input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand), dt, viewer);
   const pointing = pointer.update(input.hands, [{ object: panel.mesh, w: PANEL_W, h: PANEL_H, press: (l) => press(panel.hit(l)) }], you());
-  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id) && !pointing.has(h.id) && !h.aim);
+  const hands = input.hands.filter((h) => h !== helpHand && !peace.includes(h) && h !== palmHand && !carrying.has(h.id) && !pointing.has(h.id) && (!h.aim || h.fist));
   if (stickNav.update(input.hands, dt, viewer)) remember(); // undo goes back to before you moved
   updateHands(hands, dt);
   wheelZoom();
