@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 
-const CW = 1024, CH = 700;
+const CW = 1024, CH = 810;
 export const PANEL_W = 0.5, PANEL_H = (PANEL_W * CH) / CW;
 const PAD = 26, GAP = 10, BTN_H = 62;
 const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
 
 // The panel, poked with a fingertip: what's loaded and its status; the
-// scenes to load; tools (move / measure, view history); orientation (flip,
+// scenes and scans to load; tools (move / measure, view history); orientation (flip,
 // quarter turns, size); display (passthrough, spin). One canvas.
 export class Panel {
   constructor() {

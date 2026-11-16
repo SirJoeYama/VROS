@@ -187,7 +187,7 @@ Desktop preview: drag to paint on a plane through the drawing's origin, click th
 
 ## Splat
 
-Walk through Gaussian splats: photoreal 3D captures of objects and places. Rendering is by [Spark](https://sparkjs.dev) (World Labs), which reads .ply (also compressed), .spz, .splat, .ksplat and .sog. Seven sample scenes load from Spark's examples; open your own in window mode (**Open a splat…**, drop a file on the page, or paste a link).
+Walk through Gaussian splats: photoreal 3D captures of objects and places. Rendering is by [Spark](https://sparkjs.dev) (World Labs), which reads .ply (also compressed), .spz, .splat, .ksplat and .sog. It also opens 3D scans as meshes (.glb, or a .gltf with everything embedded, Draco or meshopt compressed or not), lit by a soft studio light, with the same gestures. Seven sample scenes load from Spark's examples, and five sample scans (a tree frog, a rhinoceros beetle, a freshwater crab, a bumblebee and a swallowtail butterfly) are CC0 photogrammetry by [ffish.asia / floraZia.com](https://sketchfab.com/ffishAsia-and-floraZia), compressed with [glTF-Transform](https://gltf-transform.dev) to a few MB each (`apps/splat/models/`); open your own in window mode (**Open a splat or .glb…**, drop a file on the page, or paste a link).
 
 | Gesture | Effect |
 | --- | --- |
@@ -198,9 +198,9 @@ Walk through Gaussian splats: photoreal 3D captures of objects and places. Rende
 | **Peace sign, held 1 s** | Left hand: undo; right hand: redo. Covers where you were (every pull, grab and reset) and how the splat sits (flips, turns, size, spin). |
 | **Two fists, held 1 s** | Reset the view: life size, back in front of it, and the panel too. |
 | **Palm up, held 1 s** | The panel comes to your hand. |
-| **Poke the panel** | Scenes; Move / Measure / Clear, ↶ / ↷ view, Reset view; Flip, Turn X / Y / Z (90°), Size − / +; Passthrough (in mixed reality), Auto spin, Reset orientation. |
+| **Poke the panel** | Scenes, scans; Move / Measure / Clear, ↶ / ↷ view, Reset view; Flip, Turn X / Y / Z (90°), Size − / +; Passthrough (in mixed reality), Auto spin, Reset orientation. |
 
-Objects (anything whose splats span less than 4 units) float in front of you about 0.8 m across, turning about their middle; places stay life size with you standing at their origin, which is usually where the capture camera was. The size is worked out from where the splats really are, leaving out the outer 2 %, so stray splats far out don't throw it off. Most splats are made in computer-vision axes, so they're turned the right way up by default; **Flip** and the quarter turns fix any that aren't, and each splat remembers how you turned and sized it. The panel moves like the others (the bar under it, its corner, palm up).
+Objects (anything whose splats span less than 4 units) float in front of you about 0.8 m across, turning about their middle; places stay life size with you standing at their origin, which is usually where the capture camera was. The size is worked out from where the splats really are, leaving out the outer 2 %, so stray splats far out don't throw it off. Most splats are made in computer-vision axes, so they're turned the right way up by default (meshes are already y up and are left as they are); **Flip** and the quarter turns fix any that aren't, and each splat remembers how you turned and sized it. The panel moves like the others (the bar under it, its corner, palm up).
 
 Desktop preview: drag to pull the world, right-drag to turn around the splat, wheel to move closer or further; keys are listed on the page. This app uses three.js 0.180 (Spark needs it) through its own import map; the others stay on 0.170.
 
@@ -356,6 +356,7 @@ apps/rigger/
 apps/splat/
   src/scene.js      loading splats (Spark), where they really are, object or place, orientation
   src/measure.js    two-point measuring, kept on the splat
+  models/           sample scans (.glb, meshopt compressed); originals/ is ignored
   src/panel.js      the pokeable panel: scenes, tools, orientation, display
   src/main.js       pulling the world, the two-hand view grab, spin, view history, mouse, XR
 apps/mocap/
