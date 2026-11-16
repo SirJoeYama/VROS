@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { SparkRenderer } from '@sparkjsdev/spark';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Input, palmFacesUp } from '../../../shared/input.js';
 import { HandsView } from '../../../shared/handsView.js';
 import { CloseGesture } from '../../../shared/closeGesture.js';
@@ -11,7 +12,7 @@ import { Pointer } from '../../../shared/pointer.js';
 import { PalmDock } from '../../../shared/palmDock.js';
 import { NavGrab, NavDrag, resetDolly, StickNav } from '../../../shared/navGrab.js';
 import { setupEnterXR } from '../../../shared/xr.js';
-import { Scene, SAMPLES, FORMATS } from './scene.js';
+import { Scene, SAMPLES, SCANS, FORMATS } from './scene.js';
 import { Measure } from './measure.js';
 import { Panel, PANEL_W, PANEL_H } from './panel.js';
 
@@ -33,6 +34,10 @@ document.body.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = BG;
 scene.add(new SparkRenderer({ renderer }));
+// Splats carry their own light; meshes (.glb scans) need some. A soft
+// studio room lights them evenly from every side, so a scan looks the same
+// whichever way you turn it.
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.01, 1000);
 
 // The camera sits in a "dolly": every way of moving around (pulling the
@@ -144,7 +149,7 @@ async function load(source) {
     view.pose = savedPose() || view.defaultPose();
     past.length = future.length = 0;
     placeNow();
-    say(`${info.name}: ${info.count.toLocaleString()} splats. ${info.object ? 'Pinch to pull yourself around it.' : 'Pinch to pull yourself through it.'}`);
+    say(`${info.name}: ${info.count.toLocaleString()} ${info.unit}. ${info.object ? 'Pinch to pull yourself around it.' : 'Pinch to pull yourself through it.'}`);
   } catch (err) {
     console.error(err);
     say(`Could not load ${source.name}: ${err.message || err}`);
@@ -240,10 +245,11 @@ function panelState() {
   const len = measure.length;
   return {
     title: info ? `SPLAT · ${info.name}` : 'SPLAT',
-    status: S.busy || S.note || (info ? `${info.count.toLocaleString()} splats` : 'Pick a scene to load.'),
+    status: S.busy || S.note || (info ? `${info.count.toLocaleString()} ${info.unit}` : 'Pick a scene to load.'),
     progress: S.progress,
     rows: [
       { label: 'SCENES', cols: 4, items: scenes },
+      { label: 'SCANS', cols: 5, items: SCANS.map((s) => ({ id: `scan:${s.id}`, label: s.name, on: cur === s })) },
       { label: 'TOOLS', items: [
         { id: 'move', label: 'MOVE', sub: 'pinch: pull the world', on: S.mode === 'move' },
         { id: 'measure', label: 'MEASURE', sub: len != null ? fmt(len) : 'pinch two points', on: S.mode === 'measure' },
@@ -275,6 +281,7 @@ function press(id) {
   panel.flash(id);
   S.note = '';
   if (id.startsWith('sample:')) return load(SAMPLES.find((s) => s.id === id.slice(7)));
+  if (id.startsWith('scan:')) return load(SCANS.find((s) => s.id === id.slice(5)));
   if (id.startsWith('turn:')) { remember(); view.turn(id.slice(5)); return savePose(); }
   ({
     own: () => S.own && load(S.own),
